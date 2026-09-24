@@ -25,13 +25,11 @@ def _full_validate(content: str, valid_ids: set, items_by_handle: dict) -> dict:
 
 
 def recommend(db: Session, user: User, need: str, history: list[dict], llm: LLM) -> dict:
-    # ① 召回候选：本人衣橱，不含心愿单
+    # ① 召回候选：本人衣橱全部单品
     all_items = [
         item_out(it)
         for it in db.scalars(
-            select(Item)
-            .where(Item.user_id == user.id, Item.is_in_wishlist.is_(False))
-            .order_by(Item.created_at, Item.id)
+            select(Item).where(Item.user_id == user.id).order_by(Item.created_at, Item.id)
         )
     ]
 

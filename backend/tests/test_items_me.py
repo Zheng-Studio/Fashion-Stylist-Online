@@ -35,7 +35,6 @@ def test_item_crud_and_file_cleanup(client):
     h = auth("alice")
     item = create_item(client, "内搭", "白衬衫")
     assert item["primary_path"].startswith("u/")
-    assert item["is_in_wishlist"] is False
     old_path = item["primary_path"]
 
     # 换一张图：旧图文件应被清掉

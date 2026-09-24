@@ -109,7 +109,7 @@ def upload_item_image(client, user="alice", color=(200, 50, 50)) -> str:
     return r.json()["path"]
 
 
-def create_item(client, category, name="", user="alice", wishlist=False, season=None) -> dict:
+def create_item(client, category, name="", user="alice", season=None) -> dict:
     path = upload_item_image(client, user)
     body = {
         "name": name or category,
@@ -118,7 +118,6 @@ def create_item(client, category, name="", user="alice", wishlist=False, season=
         "color": ["黑"],
         "season": season or [],
         "description": f"{name or category}描述",
-        "is_in_wishlist": wishlist,
         "images": [{"id": "img1", "kind": "upload", "path": path}],
         "primary_image_id": "img1",
     }

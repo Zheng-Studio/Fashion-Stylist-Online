@@ -1,13 +1,13 @@
 """ORM 模型。
 
 和家庭版的差别：没有「模特」了——模特就是用户本人。所有数据都挂在 user 下，
-不再有「共享单品」。图片字段存的是存储 key（如 u/<uid>/items/<uuid>.jpg），
+不再有「共享单品」和「心愿单」。图片字段存的是存储 key（如 u/<uid>/items/<uuid>.jpg），
 URL 由前端按 key 拼，换对象存储时数据不用迁。
 """
 import datetime
 import uuid
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -46,7 +46,6 @@ class Item(Base):
     color: Mapped[list] = mapped_column(JSON, default=list)
     season: Mapped[list] = mapped_column(JSON, default=list)
     description: Mapped[str] = mapped_column(Text, default="")
-    is_in_wishlist: Mapped[bool] = mapped_column(Boolean, default=False)
     # 图库：[{id, kind: upload|normalized|edited, path: <key>, prompt?, source_id?}]
     images: Mapped[list] = mapped_column(JSON, default=list)
     primary_image_id: Mapped[str | None] = mapped_column(String(32))

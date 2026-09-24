@@ -16,7 +16,6 @@ export interface Item {
   color: string[]; // 主色在前，≤3
   season: string[];
   description: string;
-  is_in_wishlist: boolean;
   images: ItemImage[];
   primary_image_id: string | null;
   primary_path: string; // 后端派生：主图 key（封面 / 选款 / 换装都用它）
@@ -31,7 +30,6 @@ export interface ItemInput {
   color: string[];
   season: string[];
   description: string;
-  is_in_wishlist: boolean;
   images: ItemImage[];
   primary_image_id: string | null;
 }

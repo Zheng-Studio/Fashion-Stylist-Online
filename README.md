@@ -13,7 +13,7 @@
 | | 家庭版 | 本项目 |
 |---|---|---|
 | 用户 | 前门选家庭成员 + 管理 PIN | Lucimix 平台用户（token），**用户即模特** |
-| 衣橱 | 成员专属 + 家庭共享 | 每个用户只有自己的 |
+| 衣橱 | 成员专属 + 家庭共享 + 心愿单 | 每个用户只有自己的，没有心愿单 |
 | 大模型 | 本地 Ollama | OpenAI 兼容接口（可配任意厂商） |
 | 生图 | 本地 ComfyUI，逐件串行换装 | OpenAI 兼容 `images/edits`，默认一次调用换整套 |
 | 数据库 | SQLite + 手写迁移 | SQLAlchemy + Alembic（本地 SQLite / 线上 Postgres） |

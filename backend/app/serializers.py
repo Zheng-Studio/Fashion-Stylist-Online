@@ -20,7 +20,6 @@ def item_out(item: Item) -> dict:
         "color": item.color or [],
         "season": item.season or [],
         "description": item.description or "",
-        "is_in_wishlist": bool(item.is_in_wishlist),
         "images": item.images or [],
         "primary_image_id": item.primary_image_id,
         "primary_path": primary_path(item),

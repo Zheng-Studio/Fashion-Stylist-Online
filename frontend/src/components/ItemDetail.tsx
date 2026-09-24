@@ -69,7 +69,6 @@ export default function ItemDetail({
             </div>
             {item.description && <p className="detail-desc">{item.description}</p>}
             <div className="detail-tags">
-              {item.is_in_wishlist && <span className="wish-tag">心愿</span>}
               {item.season.map((s) => (
                 <span key={s} className="tag">
                   {s}

@@ -739,27 +739,6 @@ body {
   background: var(--tint);
   color: var(--muted);
 }
-.wish-tag {
-  font-size: 12px;
-  padding: 2px 10px;
-  border-radius: var(--pill);
-  background: var(--accent);
-  color: var(--accent-text);
-}
-/* 表单里的复选行（心愿单开关） */
-.checkbox-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: var(--ink);
-  margin: 8px 0;
-  cursor: pointer;
-}
-.checkbox-line input {
-  width: 16px;
-  height: 16px;
-}
 .chat-log {
   flex: 1;
   overflow-y: auto;
@@ -1463,28 +1442,6 @@ button:active {
   background: var(--surface);
   color: var(--ink);
   box-shadow: var(--shadow-inset);
-}
-
-/* 衣橱 Tab 切换（全部 / 心愿单）：比 filter-btn 更突出，用下划线指示 */
-.wardrobe-tabs {
-  display: inline-flex;
-  gap: 0;
-}
-.tab-btn {
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--muted);
-  padding: 8px 16px;
-  font-size: 15px;
-  font-family: inherit;
-  font-weight: 500;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-}
-.tab-btn.active {
-  color: var(--ink);
-  border-bottom-color: var(--ink);
 }
 
 /* 通用按钮 */

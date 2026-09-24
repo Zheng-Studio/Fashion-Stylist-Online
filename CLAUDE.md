@@ -4,7 +4,7 @@
 
 ## 项目是什么
 对话式 AI 穿搭助手，作为第三方应用嵌入 Lucimix 平台（iframe）。**用户即模特**：每个平台用户只有自己的衣橱和照片。
-由家庭自用版 Fashion-Stylist v0.15 重建而来；家庭版的约定（PIN、共享单品、Ollama、ComfyUI、`connect()` 等）**在这里都不适用**。
+由家庭自用版 Fashion-Stylist v0.15 重建而来；家庭版的约定（PIN、共享单品、心愿单、Ollama、ComfyUI、`connect()` 等）**在这里都不适用**。
 
 ## 分层约定（后端）
 - `domain/`：纯逻辑，不做 IO（不碰 DB、存储、网络），可以直接单测。选款的核心规则都在这里。

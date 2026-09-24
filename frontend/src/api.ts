@@ -70,9 +70,8 @@ export async function uploadAvatar(file: Blob): Promise<Me> {
 // ---------------------------------------------------------------------------
 // 单品
 // ---------------------------------------------------------------------------
-export async function fetchItems(opts?: { isInWishlist?: boolean }): Promise<Item[]> {
-  const qs = opts?.isInWishlist !== undefined ? `?is_in_wishlist=${opts.isInWishlist}` : "";
-  return (await request(`/api/items${qs}`, {}, "加载单品失败")).json();
+export async function fetchItems(): Promise<Item[]> {
+  return (await request("/api/items", {}, "加载单品失败")).json();
 }
 
 // 上传一张单品图，返回存储 key

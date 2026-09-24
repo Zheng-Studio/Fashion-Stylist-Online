@@ -60,7 +60,7 @@ def main() -> None:
             db.add(Item(
                 user_id=user.id, name=s.get("name", ""), gender=s.get("gender", ""),
                 category=s["category"], color=s.get("color", []), season=s.get("season", []),
-                description=s.get("description", ""), is_in_wishlist=False,
+                description=s.get("description", ""),
                 images=[{"id": img_id, "kind": "upload", "path": key}], primary_image_id=img_id,
             ))
             n += 1

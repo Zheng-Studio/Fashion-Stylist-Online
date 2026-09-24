@@ -9,7 +9,6 @@ import { useConfirm } from "./useConfirm";
 
 type ViewMode = "card" | "list";
 type SortMode = "new" | "old";
-type WishView = "all" | "wishlist"; // 全部（已有 + 心愿单）/ 仅心愿单
 
 const VIEW_KEY = "fs.wardrobeView";
 const SORT_KEY = "fs.wardrobeSort";
@@ -54,7 +53,6 @@ export default function Wardrobe() {
   const [editing, setEditing] = useState<Item | undefined | null>(null);
   const [detail, setDetail] = useState<Item | null>(null);
   const [catSel, setCatSel] = useState<string[]>([]); // 空 = 全部
-  const [wishView, setWishView] = useState<WishView>("all");
   const [view, setView] = useState<ViewMode>(() => readPref(VIEW_KEY, "card"));
   const [sort, setSort] = useState<SortMode>(() => readPref(SORT_KEY, "new"));
 
@@ -93,11 +91,7 @@ export default function Wardrobe() {
   if (loadErr && items.length === 0) return <div className="error">{loadErr}</div>;
 
   const shown = sortItems(
-    items.filter((it) => {
-      if (wishView === "wishlist" && !it.is_in_wishlist) return false;
-      if (catSel.length > 0 && !catSel.includes(it.category)) return false;
-      return true;
-    }),
+    catSel.length > 0 ? items.filter((it) => catSel.includes(it.category)) : items,
     sort,
   );
 
@@ -105,22 +99,6 @@ export default function Wardrobe() {
     <div>
       <div className="wardrobe-head">
         <div className="filters">
-          <div className="wardrobe-tabs">
-            {(
-              [
-                ["all", "全部"],
-                ["wishlist", "心愿单"],
-              ] as [WishView, string][]
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                className={"tab-btn" + (wishView === key ? " active" : "")}
-                onClick={() => setWishView(key)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
           <span className="count">共 {shown.length} 件</span>
         </div>
 
@@ -208,7 +186,6 @@ export default function Wardrobe() {
                 <div className="row-title">{it.name || it.category}</div>
                 <div className="row-desc">{it.description}</div>
                 <div className="tags row-tags">
-                  {it.is_in_wishlist && <span className="wish-tag">心愿</span>}
                   {it.season.map((s) => (
                     <span key={s} className="tag">
                       {s}
@@ -225,7 +202,6 @@ export default function Wardrobe() {
       {editing !== null && (
         <ItemForm
           item={editing ?? undefined}
-          defaultWishlist={wishView === "wishlist"}
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);

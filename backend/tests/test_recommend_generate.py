@@ -18,13 +18,13 @@ def _charges():
 def test_recommend_maps_handles_to_items(client, llm):
     top = create_item(client, "内搭", "白衬衫")
     bottom = create_item(client, "下装", "黑裤")
-    create_item(client, "鞋", "心愿鞋", wishlist=True)  # 心愿单不进候选
+    create_item(client, "内搭", "别人的衬衫", user="bob")  # 别人的单品不进候选
     llm.replies = [recommend_reply(["内搭1", "下装1"])]
 
     r = client.post("/api/recommend", json={"need": "通勤，四季"}, headers=auth("alice")).json()
     assert r["passed"] is True
     assert [it["id"] for it in r["enriched"]["items"]] == [top["id"], bottom["id"]]
-    assert "心愿鞋" not in r["prompt"]["user"]
+    assert "别人的衬衫" not in r["prompt"]["user"]
     assert llm.calls[0]["schema"] is not None
 
 

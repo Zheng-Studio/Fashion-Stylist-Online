@@ -10,7 +10,6 @@ import { useItemGallery } from "./useItemGallery";
 interface Props {
   // 传入则为编辑态，预填已有值；不传为新建
   item?: Item;
-  defaultWishlist?: boolean; // 从心愿单视图新建时默认进心愿单
   onClose: () => void;
   onSaved: () => void;
 }
@@ -24,7 +23,7 @@ function parseColors(text: string): string[] {
     .slice(0, 3);
 }
 
-export default function ItemForm({ item, defaultWishlist, onClose, onSaved }: Props) {
+export default function ItemForm({ item, onClose, onSaved }: Props) {
   const editing = !!item;
 
   // 图库（上传/生成/旋转/主图/落盘）整体在 useItemGallery 里，表单只管字段与保存
@@ -39,9 +38,6 @@ export default function ItemForm({ item, defaultWishlist, onClose, onSaved }: Pr
   const [colorText, setColorText] = useState((item?.color ?? []).join("、"));
   const [season, setSeason] = useState<string[]>(item?.season ?? []);
   const [description, setDescription] = useState(item?.description ?? "");
-  const [isWishlist, setIsWishlist] = useState<boolean>(
-    editing ? item!.is_in_wishlist : !!defaultWishlist,
-  );
 
   // AI 编辑指令 + 弹窗开关
   const [editPrompt, setEditPrompt] = useState("");
@@ -167,7 +163,6 @@ export default function ItemForm({ item, defaultWishlist, onClose, onSaved }: Pr
         color: parseColors(colorText),
         season,
         description,
-        is_in_wishlist: isWishlist,
         images,
         primary_image_id: primaryImageId,
       };
@@ -393,17 +388,6 @@ export default function ItemForm({ item, defaultWishlist, onClose, onSaved }: Pr
 
           <label className="field-label">性别</label>
           <GenderChips value={gender} onChange={setGender} disabled={infoDisabled} />
-
-
-          <label className="checkbox-line">
-            <input
-              type="checkbox"
-              checked={isWishlist}
-              onChange={(e) => setIsWishlist(e.target.checked)}
-              disabled={infoDisabled}
-            />
-            加入心愿单（想买的，不参与选款）
-          </label>
 
           <label className="field-label">颜色</label>
           <input

@@ -34,7 +34,6 @@ class ItemIn(BaseModel):
     color: list[str] = Field(default_factory=list)
     season: list[str] = Field(default_factory=list)
     description: str = ""
-    is_in_wishlist: bool = False
     images: list[ImageIn] = Field(default_factory=list)
     primary_image_id: str | None = None
 
@@ -64,21 +63,14 @@ def _apply(item: Item, body: ItemIn, user: User, storage: Storage) -> None:
     item.color = body.color[:3]
     item.season = body.season
     item.description = body.description
-    item.is_in_wishlist = body.is_in_wishlist
     item.images = images
     # 主图 id 缺失/非法则回落最近一张
     item.primary_image_id = body.primary_image_id if body.primary_image_id in ids else images[-1]["id"]
 
 
 @router.get("")
-def list_items(
-    is_in_wishlist: bool | None = None,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
+def list_items(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     q = select(Item).where(Item.user_id == user.id)
-    if is_in_wishlist is not None:
-        q = q.where(Item.is_in_wishlist.is_(is_in_wishlist))
     return [item_out(it) for it in db.scalars(q.order_by(Item.created_at.desc(), Item.id))]
 
 
