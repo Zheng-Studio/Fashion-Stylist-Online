@@ -1,0 +1,2788 @@
+/* 设计令牌：对齐 docs/DESIGN.md（Lovable 暖奶油 + 炭黑，不透明度灰阶，6px 按钮 + inset 阴影）。 */
+/* v0.14 自托管字体：Work Sans（英·可变）+ 霞鹜新晰黑 LXGW NeoXiHei（中） */
+@font-face {
+  font-family: "Work Sans";
+  src: url("/fonts/work-sans-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Work Sans";
+  src: url("/fonts/work-sans-latin-wght-italic.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "LXGW NeoXiHei";
+  src: url("/fonts/LXGWNeoXiHei.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+:root {
+  --bg: #f7f4ed;          /* 暖奶油页面底色（不是纯白） */
+  --surface: #fcfbf8;     /* 卡片/输入面：近白暖色，比底色微提一档 */
+  --ink: #1c1c1c;         /* 炭黑：正文/标题/深色按钮 */
+  --ink-83: rgba(28, 28, 28, 0.83); /* 次级强文本 */
+  --muted: #5f5f5d;       /* 次级文本/说明/caption */
+  --line: #eceae4;        /* 被动分隔线/卡片描边 */
+  --line-strong: rgba(28, 28, 28, 0.4); /* 交互元素描边（ghost 按钮等） */
+  --tint: rgba(28, 28, 28, 0.04); /* 极淡微染：hover/标签底 */
+  --accent: #1c1c1c;
+  --accent-text: #fcfbf8; /* 深色按钮上的近白文字 */
+  --danger: #b91c1c;
+
+  --sidebar-w: 260px;     /* 桌面左侧导航栏宽度 */
+  --content-max: 1400px;  /* 内容区上限（侧栏之外的可读宽度） */
+  --radius-sm: 6px;       /* 按钮/输入 */
+  --radius: 12px;         /* 卡片/图片容器 */
+  --radius-lg: 16px;      /* 大容器/modal */
+  --pill: 9999px;         /* 动作 pill / 图标按钮 / 标签 */
+
+  /* 深色按钮签名 inset 阴影 */
+  --shadow-inset: rgba(255, 255, 255, 0.2) 0 0.5px 0 0 inset,
+    rgba(0, 0, 0, 0.2) 0 0 0 0.5px inset, rgba(0, 0, 0, 0.05) 0 1px 2px 0;
+  /* 柔和聚焦投影 */
+  --shadow-focus: rgba(0, 0, 0, 0.1) 0 4px 12px;
+  /* 输入键盘聚焦环 */
+  --ring: 0 0 0 2px rgba(140, 110, 90, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* 页面滚动条常驻占位（v0.15 侧栏导航后必须）：各 tab 内容长短不一——对话页是固定高度、
+   内部滚动，页面不滚；衣橱页很长，页面要滚。滚动条时有时无会改变视口宽度，
+   而 .app 是 max-width + margin:auto 居中的，于是切 tab 时整个布局横向跳一下。
+   留出滚动槽即可消除（移动端 html 是 overflow:hidden，此属性不生效也不影响）。 */
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Work Sans", "LXGW NeoXiHei", ui-sans-serif, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  /* 独立 App 体验：去掉点击高亮，禁止整页橡皮筋下拉露出背景 */
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+.app {
+  /* 铺满视口：侧栏要贴在屏幕最左边，不能整体居中（居中会让侧栏浮在中间）。
+     限宽的责任交给 .content —— 内容本身假设了有界宽度
+     （.bubble 是 70% 百分比、.wardrobe-grid 是固定 5 列，无限拉宽会让行太长、卡片过大）。 */
+  min-height: 100vh;
+  /* 桌面：左侧栏 + 内容两栏。移动端在文末媒体查询里改回 flex 纵向
+     （那套 --app-h / 固定定位 / 键盘适配不动，见 v0.14）。 */
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+}
+
+/* 左侧导航栏（v0.15）：桌面取代顶栏 tab。品牌在顶、导航在中、退出钉底。
+   移动端隐藏，仍走底部 tabbar。 */
+.sidebar {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  /* 近白面：比页面奶油底 (--bg) 提亮一档，让导航区与内容区有明确分界 */
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  /* 内容比一屏长时侧栏钉住不跟着滚 */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-item:hover {
+  background: var(--tint);
+  color: var(--ink);
+}
+/* 选中态沿用 .tab.active / .chip.on 的实心强调色，全站一致 */
+.sidebar-item.active {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.sidebar-item:active {
+  opacity: 0.8;
+}
+/* 底部区块（当前用户 / 退出）钉到侧栏底部 */
+.sidebar-foot {
+  margin-top: auto;
+}
+
+/* 左下角当前用户块：头像 + 名字，点开向上弹菜单 */
+.sidebar-user {
+  position: relative;
+}
+.sidebar-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.sidebar-user-btn:hover,
+.sidebar-user-btn.open {
+  background: var(--tint);
+}
+.sidebar-user-avatar {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tint);
+  color: var(--muted);
+}
+.sidebar-user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.sidebar-user-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 菜单向上弹：用户块贴着侧栏底部，往下没有空间 */
+.sidebar-menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-focus);
+}
+.sidebar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.sidebar-menu-item:hover {
+  background: var(--tint);
+}
+.sidebar-exit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+}
+
+/* 顶栏 + Tab —— 桌面走侧栏，故默认隐藏；移动端在文末媒体查询里恢复 display:flex */
+.topbar {
+  display: none;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600; /* DESIGN：最大权重 600，不用 700 */
+  letter-spacing: -0.3px;
+}
+/* 品牌图标（衣架），顶栏标题左侧；前门/成员顶栏共用 */
+.brand-mark {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+}
+.tab {
+  border: none;
+  background: transparent;
+  padding: 8px 16px;
+  border-radius: var(--pill);
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 15px;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+.tab:hover {
+  background: var(--tint);
+}
+.tab.active {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.tab.active:hover {
+  background: var(--accent);
+}
+/* 底部 tabbar：桌面隐藏，移动端媒体查询里启用（见文末） */
+.tabbar {
+  display: none;
+}
+/* 顶栏当前模特区（v0.9 成员空间）：当前人名 + 切换，桌面靠右 */
+.topbar-person {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar-exit {
+  padding: 6px 12px;
+  font-size: 14px;
+}
+/* 切换用户：圆形图标按钮（⇄），紧跟当前模特名 */
+.topbar-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: none;
+}
+.topbar-switch:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+.topbar-exit {
+  margin-left: auto; /* 管理顶栏：退出按钮靠右 */
+}
+
+/* 前门：谁在用？（v0.9 落地选人页，共用电脑每次启动落在这里） */
+.gate {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  /* 前门没有侧栏：占满 .app 栅格的两栏，别被塞进 200px 的导航列 */
+  grid-column: 1 / -1;
+}
+/* 顶栏铺满前门宽度。v0.15 前 .app 是 max-width+居中，这里要靠 100vw + 位移突破父容器；
+   现在 .app 已铺满视口，直接 100% 即可——继续用 100vw 反而会横向溢出
+   （100vw 含滚动条槽宽，而 html 开了 scrollbar-gutter:stable 会常驻留槽）。 */
+.gate-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  width: 100%;
+  flex-shrink: 0; /* 顶栏永不被主体挤压/挤出屏幕 */
+}
+.gate-bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+}
+.gate-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--ink);
+}
+.gate-settings-btn {
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+.gate-settings-btn:hover {
+  color: var(--ink);
+  background: var(--tint);
+}
+/* 主体：标题 + 人物卡片，居中 */
+/* 主体：放得下时居中、放不下时从顶部起可滚动。
+   不用 justify-content:center（不可滚动容器里内容超高会把顶栏/标题挤出可视区，
+   且 center+overflow 有"滚不到顶"老坑）——改用首/尾子项 margin:auto 自动居中，
+   空间不足时 auto 归零、内容贴顶且能滚到底。 */
+.gate-body {
+  flex: 1;
+  min-height: 0; /* flex 子项默认 min-height:auto 会拒绝收缩、挡掉滚动 */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  padding: 24px 20px calc(40px + env(safe-area-inset-bottom));
+}
+.gate-body > :first-child {
+  margin-top: 20vh; /* 适中偏上 */
+}
+.gate-body > :last-child {
+  margin-bottom: auto;
+}
+.gate-title {
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: -0.9px;
+}
+.gate-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  justify-content: center;
+  padding: 0 24px;
+}
+.gate-card {
+  width: 138px; /* 桌面端 +15% */
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  cursor: pointer;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font-family: inherit;
+  text-align: center;
+  transition: transform 0.15s;
+}
+.gate-card:hover {
+  transform: scale(1.08);
+}
+.gate-card-img {
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--tint);
+}
+.gate-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.gate-card-noimg {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  font-weight: 600;
+  color: var(--line-strong);
+}
+.gate-card-name {
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--ink);
+}
+/* 管理入口（v0.9 → 改为右上角小齿轮，不再用卡片） */
+
+/* 管理区「设置」tab：分块 + 选款模型 + 来源切换（来源暂为预留口子） */
+.settings-tab {
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.settings-sec-h {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.settings-hint {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+/* 设置页里的模型选择器竖排撑满 */
+.settings-tab .model-picker {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.settings-tab .model-picker select {
+  max-width: none;
+  width: 100%;
+}
+/* 设置页告警文案（默认模型缺失 / 列表加载失败） */
+.settings-warn {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--danger);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink-83);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.settings-warn code {
+  font-size: 12px;
+  background: var(--tint);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* 「待接入」小标 */
+.settings-soon {
+  margin-left: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.content {
+  padding: 20px;
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0; /* 栅格子项默认 min-width:auto，不压会被宽内容（图片行/pre）撑破 */
+  /* 内容限宽 + 在侧栏右侧的剩余空间里居中。
+     所有 tab 统一居中（不只对话页）——各 tab 对齐方式不一致的话，切 tab 会横向跳。 */
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+}
+
+/* 对话页：单栏，推理过程走 Portal popover（不在对话流里展开）。dvh 适配移动端地址栏伸缩 */
+.chat {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  /* 桌面无顶栏（导航在左侧栏），只需扣掉 .content 的上下 padding 各 20px */
+  height: calc(100dvh - 40px);
+}
+.model-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+.model-picker-label {
+  color: var(--muted);
+}
+.model-picker select {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  font-family: inherit;
+  max-width: 240px;
+}
+.model-picker-err {
+  font-size: 13px;
+  color: var(--danger);
+}
+
+.outfit-block {
+  margin-top: 6px;
+}
+/* 一套搭配合成一张卡：单品横排 + 生成按钮都在卡内（图不裁切，沿用全站约定）。
+   缩略图固定尺寸（84×112，不伸不缩）→ 1~5 件卡片高度恒定，只有宽度随件数变长。 */
+.outfit-card {
+  margin-top: 8px;
+  width: fit-content;
+  max-width: 100%; /* 桌面单行往后排，最多到对话列宽；1 件仍是 fit-content 小卡 */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.outfit-items {
+  display: flex;
+  flex-wrap: nowrap; /* 桌面：单行往后排，不换行不滚动（移动端见媒体查询改 wrap） */
+  gap: 8px;
+}
+.outfit-item {
+  margin: 0;
+  flex: 0 0 auto; /* 固定尺寸，不伸不缩 → 高度恒定 */
+  width: 84px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.outfit-item img {
+  width: 100%; /* = 84px */
+  /* 方图 + cover，与衣橱卡片封面同口径（单品归一化图本就是 1280×1280 方图，
+     方框内 cover 等于不裁切；未归一化的原图会裁掉多余边，与衣橱一致）。 */
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  background: var(--tint);
+  border-radius: var(--radius-sm);
+  display: block;
+  cursor: zoom-in;
+}
+.outfit-item figcaption {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 生成按钮：卡片内整宽 */
+.outfit-gen-btn {
+  width: 100%;
+}
+/* v0.10 生图：进度 / 结果 / 失败 */
+.gen-block {
+  margin-top: 8px;
+}
+
+.gen-error {
+  font-size: 13px;
+  color: #b3261e;
+  padding: 6px 0;
+}
+/* 底图 ↔ 上身效果 并排对比 */
+.gen-compare {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+}
+.gen-fig {
+  margin: 0;
+  flex: 0 1 auto;
+}
+.gen-fig img {
+  width: 100%;
+  max-width: 294px; /* 较原 420px 缩小约 30% */
+  border-radius: var(--radius, 12px);
+  display: block;
+}
+.gen-fig figcaption {
+  margin-top: 4px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+/* 生图舞台：固定尺寸（220px / 竖版 3:4，较原 294 缩 25%），base→result 共用同一块、不跳尺寸 */
+.gen-stage {
+  position: relative;
+  width: 220px;
+  max-width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius, 12px);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  background: var(--tint);
+}
+/* 底图模糊垫底：填满舞台、放大一点遮住模糊边 */
+.gen-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(6px) brightness(0.7);
+  transform: scale(1.1);
+}
+/* 成图：contain 不裁切，下面有模糊底图垫黑边 */
+.gen-result {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+/* 还没拿到底图时，舞台走 shimmer 提示加载中 */
+.gen-stage.loading:not(.has-bg) {
+  background: linear-gradient(100deg, var(--tint) 30%, rgba(28, 28, 28, 0.08) 50%, var(--tint) 70%);
+  background-size: 200% 100%;
+  animation: gen-shimmer 1.4s ease-in-out infinite;
+}
+/* 进度文字浮在舞台中央的胶囊里 */
+.gen-overlay-text {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  background: rgba(28, 28, 28, 0.6);
+  color: #fff;
+  font-size: 13px;
+  text-align: center;
+  padding: 7px 14px;
+  border-radius: var(--pill);
+}
+@keyframes gen-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+/* 生成图上 hover 浮现的操作按钮：对比（右上）/ 重新生成 + 提示词（左下并排） */
+.gen-pill {
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--pill);
+  background: rgba(28, 28, 28, 0.6);
+  color: #fff;
+  font-size: 12px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+.gen-compare-btn {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.gen-btns-bl {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 3;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.gen-stage:hover .gen-compare-btn,
+.gen-stage:hover .gen-btns-bl {
+  opacity: 1;
+}
+@media (hover: none) {
+  .gen-compare-btn,
+  .gen-btns-bl {
+    opacity: 1;
+  }
+}
+
+.owner-tag {
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: var(--pill);
+  background: var(--tint);
+  color: var(--muted);
+}
+.wish-tag {
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: var(--pill);
+  background: var(--accent);
+  color: var(--accent-text);
+}
+/* 表单里的复选行（心愿单开关） */
+.checkbox-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ink);
+  margin: 8px 0;
+  cursor: pointer;
+}
+.checkbox-line input {
+  width: 16px;
+  height: 16px;
+}
+.chat-log {
+  flex: 1;
+  overflow-y: auto;
+  /* 滚到顶/底不把回弹传导到整页——否则 iOS 橡皮筋会拖动整个 fixed app（顶栏/tabbar 跟着动） */
+  overscroll-behavior: contain;
+  /* 不加 -webkit-overflow-scrolling:touch：现代 iOS 默认已有惯性滚动，
+     而它会给滚动区建独立图层，键盘动画改尺寸时会导致图片闪烁 */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 0;
+}
+.bubble {
+  max-width: 70%;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  line-height: 1.5;
+}
+.bubble.assistant {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.bubble.user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: var(--accent-text);
+}
+/* 带 trace 的助手气泡可点击，展开/收起内联推理过程 */
+.bubble.has-trace {
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.bubble.has-trace.active {
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-focus);
+}
+.bubble-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.bubble.active .bubble-hint {
+  color: var(--ink);
+}
+.chat-input {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+}
+.chat-input input {
+  flex: 1;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 16px; /* iOS 聚焦不缩放 */
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--ink);
+}
+.chat-input input::placeholder {
+  color: var(--muted);
+}
+.chat-input button {
+  white-space: nowrap;
+  padding: 0 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: 16px;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: var(--shadow-inset);
+}
+/* 统一聚焦：输入类用蓝环，可点元素用柔和投影 */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-color: transparent;
+}
+button:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+/* 按下反馈：DESIGN 统一 opacity 0.8 */
+button:active {
+  opacity: 0.8;
+}
+
+/* 衣橱网格 */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+.card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) - 1px);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.card:active {
+  transform: scale(0.97);
+}
+
+.card-img {
+  aspect-ratio: 1 / 1; /* 单品归一化图为 1280×1280 方图，卡片同比铺满、不裁切 */
+}
+.card-img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 铺满卡片、无底色留白（单品照带白边，cover 正好裁掉多余边） */
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+/* 标签统一暖中性色阶（DESIGN：不引入饱和强调色） */
+.tag {
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: var(--pill);
+  background: var(--tint);
+  color: var(--muted);
+}
+.tag.family {
+  background: var(--line);
+  color: var(--ink);
+}
+/* 模特页：大图卡网格 + 拖拽排序 */
+.persons-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.persons-hint {
+  font-size: 13px;
+  color: var(--muted);
+}
+.persons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+.person-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: box-shadow 0.15s, transform 0.12s, opacity 0.12s;
+}
+.person-card.dragging {
+  opacity: 0.85;
+  transform: scale(1.03);
+  box-shadow: var(--shadow-focus);
+  z-index: 3;
+}
+/* 拖拽手柄：左上 pill，仅它响应拖拽（touch-action:none 防触屏滚动冲突） */
+.person-card-handle {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--pill);
+  background: var(--surface);
+  color: var(--muted);
+  box-shadow: var(--shadow-inset);
+  font-size: 15px;
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+}
+.person-card-handle:active {
+  cursor: grabbing;
+}
+.person-card-click {
+  cursor: pointer;
+}
+.person-card-img {
+  aspect-ratio: 3 / 4;
+  background: var(--tint);
+}
+.person-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* 整图不裁切 */
+  display: block;
+}
+.person-card-noimg {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  font-weight: 600;
+  color: var(--line-strong);
+}
+.person-card-body {
+  padding: 10px 12px 12px;
+}
+.person-card-name {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.person-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.person-card-meta .chip {
+  padding: 2px 10px;
+  font-size: 12px;
+}
+.person-card-count {
+  font-size: 13px;
+  color: var(--muted);
+}
+/* 管理弹窗内的照片管理：按宽度自适应列数；单图放大些（min 200），照片更醒目 */
+.model-imgs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+/* 删除模特：危险动作靠左 */
+.modal-foot .btn-ghost.danger {
+  margin-right: auto;
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.model-img-wrap {
+  position: relative;
+}
+.model-imgs img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: contain; /* 整图显示，不裁切不拉伸 */
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--tint);
+  display: block;
+}
+.model-img-del {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(28, 28, 28, 0.55);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.model-img-wrap:hover .model-img-del {
+  opacity: 1;
+}
+.model-img-add {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  background: var(--tint);
+}
+.model-img-add.busy {
+  cursor: default;
+  opacity: 0.6;
+}
+/* 默认图徽标（首位）/ 设为默认按钮（其余 hover 浮现），底部居中 */
+.model-img-badge,
+.model-img-setdefault {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.model-img-badge {
+  background: var(--text, #1c1c1c);
+  color: #fff;
+}
+.model-img-setdefault {
+  border: none;
+  background: rgba(28, 28, 28, 0.55);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.model-img-wrap:hover .model-img-setdefault {
+  opacity: 1;
+}
+@media (hover: none) {
+  .model-img-setdefault {
+    opacity: 1;
+  }
+}
+/* 触屏没有 hover：删除按钮常驻 */
+@media (hover: none) {
+  .model-img-del {
+    opacity: 1;
+  }
+}
+/* AI 编辑模特图：左上 hover 浮现的胶囊按钮 */
+.model-img-edit {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: none;
+  background: rgba(28, 28, 28, 0.55);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.model-img-wrap:hover .model-img-edit {
+  opacity: 1;
+}
+@media (hover: none) {
+  .model-img-edit {
+    opacity: 1;
+  }
+}
+/* AI 编辑弹窗：原图 ↔ 结果 并排预览 */
+.model-edit-compare {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.model-edit-compare figure {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+}
+.model-edit-compare img,
+.model-edit-placeholder {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--tint);
+}
+.model-edit-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--muted, #999);
+}
+.model-edit-compare figcaption {
+  font-size: 12px;
+  color: var(--muted, #888);
+  margin-top: 4px;
+}
+
+.error {
+  color: var(--danger);
+  padding: 20px;
+}
+
+/* 内联推理过程：展开在气泡下方 */
+/* 推理过程 popover：复用 .modal 外壳，限宽 + body 在弹窗内滚动 */
+.inspector-modal {
+  max-width: 720px;
+}
+.inspector-body {
+  flex: 1;
+  min-height: 0; /* flex 子项默认 min-height:auto 会拒绝收缩，挡掉滚动 */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 检查窗里的扁平分段（纯文本，无折叠） */
+.sec {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.sec:last-child {
+  border-bottom: none;
+}
+.sec-h {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.sec-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 6px 0 2px;
+}
+.sec-pre {
+  margin: 0 0 6px;
+  font-family: ui-monospace, "SFMono-Regular", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+/* 换装步骤：前后对比图（「提示词」弹窗内，调试用） */
+.step-compare {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.step-compare img,
+.step-noimg {
+  width: 80px;
+  flex-shrink: 0;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--tint);
+}
+.step-noimg {
+  display: block;
+}
+/* 换装提示词弹窗限高（比 inspector-modal 短） */
+.promo-modal {
+  max-height: 70vh;
+}
+.promo-modal .inspector-body {
+  padding: 12px 16px;
+}
+.sec-meta {
+  font-size: 13px;
+  color: var(--muted);
+}
+.sec-err {
+  color: var(--danger);
+  font-size: 14px;
+}
+
+/* 校验项：一行一条 */
+.check {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.check.ok {
+  color: #15803d;
+}
+.check.bad {
+  color: var(--danger);
+}
+
+/* 对话区里的最终搭配网格 */
+.msg {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===================== v0.2：衣橱管理 ===================== */
+
+/* 衣橱页头部：计数 + 添加按钮 */
+.wardrobe-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* 视图切换分段按钮（卡片 / 列表） */
+.view-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  background: var(--tint);
+  border-radius: var(--radius-sm);
+}
+
+/* v0.4：左侧过滤组（来源/类目下拉 + 计数） */
+.filters {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.filters .count {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* 类目筛选胶囊行（v0.15，取代原「类目」下拉）。复用 .chip / .chip.on 的胶囊外观。
+   手机上 8 个放不下 → 本行横向滚动：不换行、不占第二行高度，列表能多露一行。 */
+.cat-filter {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  padding-bottom: 2px; /* 别让滚动区裁掉胶囊底边 */
+  -webkit-overflow-scrolling: touch;
+  /* 横向滑到头时别把回弹传导给整页（同 pitfalls #11 的思路） */
+  overscroll-behavior-x: contain;
+  scrollbar-width: none; /* 桌面 8 个通常放得下、不会出现滚动条；出现时也不占位 */
+}
+.cat-filter::-webkit-scrollbar {
+  display: none;
+}
+.cat-filter .chip {
+  flex: 0 0 auto; /* 不被压扁：宁可横向滚动，也不挤成窄条 */
+  white-space: nowrap;
+}
+
+/* 多选下拉过滤组件 */
+.filter-dd {
+  position: relative;
+}
+.filter-dd-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.filter-dd-trigger.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.filter-dd-trigger .caret {
+  color: var(--muted);
+  font-size: 11px;
+}
+.filter-dd-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 30;
+  min-width: 160px;
+  max-height: 320px;
+  overflow: auto;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-focus); /* 原写 var(--shadow)，该变量从未定义 → 一直没有阴影 */
+}
+.filter-dd-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  cursor: pointer;
+}
+.filter-dd-opt:hover {
+  background: var(--tint);
+}
+.filter-dd-opt input {
+  accent-color: var(--accent);
+}
+.filter-dd-sep {
+  height: 1px;
+  background: var(--line);
+  margin: 4px 0;
+}
+
+/* v0.4：视图切换 + 排序工具组 */
+.view-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sort-select {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  font-family: inherit;
+}
+
+/* 卡片视图（小卡密排）：桌面 5 列；纯图卡，信息收进详情页 */
+.wardrobe-grid {
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+/* 列表视图：一行一件 */
+.item-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.item-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 14px 10px 10px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.item-row:active {
+  background: var(--tint);
+}
+/* 方形容器 + contain：任何比例的图都完整展示、不裁切，留白用底色填 */
+.row-img {
+  flex: 0 0 88px;
+  width: 88px;
+  height: 88px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--tint);
+}
+.row-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.row-main {
+  flex: 0 1 auto; /* 不抢占空白：内容宽、可收缩，ellipsis 仍生效 */
+  min-width: 0;
+}
+/* 颜色：行内独立字段，用 margin 推到最右（去掉操作钮后接管原 row-side 的作用） */
+.row-color {
+  flex: 0 0 auto;
+  margin-left: auto;
+  font-size: 14px;
+  color: var(--ink);
+}
+.row-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+.row-desc {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.row-tags {
+  margin: 4px 0 0;
+}
+.filter-btn {
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  padding: 6px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.filter-btn.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-inset);
+}
+
+/* 衣橱 Tab 切换（全部 / 心愿单）：比 filter-btn 更突出，用下划线指示 */
+.wardrobe-tabs {
+  display: inline-flex;
+  gap: 0;
+}
+.tab-btn {
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 16px;
+  font-size: 15px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.tab-btn.active {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+/* 通用按钮 */
+.btn-primary {
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--accent-text);
+  padding: 10px 16px;
+  font-size: 16px;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: var(--shadow-inset);
+}
+/* 删除类确认：实心红，和普通确认区分开 */
+.btn-primary.danger {
+  background: var(--danger);
+  color: #fff;
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+  box-shadow: none;
+}
+.btn-ghost {
+  border: 1px solid var(--line-strong); /* 交互描边 */
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  padding: 10px 16px;
+  font-size: 16px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* 灯箱：点图放大 */
+/* v0.14 单品全屏详情页（Portal 到 body）：跟随 --app-h/--app-top 铺满可视区 */
+/* PC：居中 modal（宽 50%）；移动端 @media 回落全屏（见文末） */
+.item-detail-backdrop {
+  position: fixed;
+  top: var(--app-top, 0);
+  left: 0;
+  right: 0;
+  height: var(--app-h, 100dvh);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(28, 28, 28, 0.45);
+}
+.item-detail {
+  width: 50%;
+  max-width: 720px;
+  max-height: 88vh;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.detail-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  padding-top: calc(8px + env(safe-area-inset-top));
+  border-bottom: 1px solid var(--line);
+}
+.detail-back {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.detail-back:active {
+  background: var(--tint);
+}
+.detail-bar-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.detail-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.detail-action:active {
+  background: var(--tint);
+}
+.detail-action-danger {
+  color: #c0392b;
+}
+.detail-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+.detail-img-wrap {
+  background: var(--tint);
+}
+.detail-img {
+  display: block;
+  width: 100%;
+  height: auto; /* 方图铺满宽度、贴顶，无留白 */
+}
+.detail-meta {
+  padding: 20px 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.detail-name {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+.detail-sub {
+  color: var(--muted);
+  font-size: 15px;
+}
+.detail-desc {
+  margin: 4px 0 0;
+  line-height: 1.6;
+}
+.detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.zoomable {
+  cursor: zoom-in;
+}
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 20, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200; /* 高于 modal(100) */
+  padding: 24px;
+}
+.lightbox img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* 原图整图，不裁切 */
+  cursor: default;
+  user-select: none;
+  touch-action: none;
+}
+.lightbox-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(4px);
+}
+.lightbox-controls button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+.lightbox-controls button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.4);
+}
+.lightbox-controls button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.lightbox-pct {
+  min-width: 48px;
+  text-align: center;
+  color: #fff;
+  font-size: 13px;
+}
+.lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+}
+.lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* 表单 modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 28, 28, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 1024px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal.modal-narrow {
+  max-width: 360px;
+}
+/* 宽版弹窗：半屏宽 + 55% 屏高（编辑模特等图片较多的场景，body 超出则内部滚动） */
+.modal.modal-half {
+  max-width: 50vw;
+  height: 55vh;
+}
+.rename-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font-size: 16px;
+  font-family: inherit;
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 600;
+}
+.modal-head .icon-btn {
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--muted);
+}
+.modal-body {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0; /* flex 子项默认 min-height:auto 会拒绝收缩，导致 overflow 不生效、滚不动 */
+  -webkit-overflow-scrolling: touch; /* iOS 惯性滚动 */
+  overscroll-behavior: contain; /* 滚到头不连带滚动背后页面 */
+}
+.modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+}
+
+/* 管理区 PIN 弹窗（v0.9）：窄弹窗复用 .modal.modal-narrow */
+/* 应用内二次确认的正文 */
+.confirm-text {
+  margin: 0;
+  color: var(--ink-83);
+  line-height: 1.6;
+}
+
+.pin-hint {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+.pin-digits {
+  position: relative;
+  margin-bottom: 10px;
+}
+.pin-digits .pin-input {
+  /* 透明覆盖在 dots 上方，捕捉键盘输入 */
+  position: absolute;
+  inset: 0;
+  opacity: 0.01;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  font-size: 16px;
+}
+.pin-dots {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+.pin-dot {
+  width: 48px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 16px;
+  color: var(--ink);
+}
+.pin-dot.filled {
+  border-color: var(--ink);
+}
+.pin-dot.cursor {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+.pin-input-confirm {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 20px;
+  letter-spacing: 6px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+/* 表单字段 */
+.field-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 14px 0 6px;
+}
+.field-label:first-child {
+  margin-top: 0;
+}
+.modal-body select,
+.modal-body input[type="text"],
+.modal-body textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 16px; /* iOS 聚焦不缩放 */
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+}
+.modal-body textarea {
+  resize: vertical;
+}
+
+/* 图片预览 + 选择 */
+.form-img {
+  aspect-ratio: 3 / 4;
+  max-height: 260px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.form-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 空状态：整框可点的上传区 */
+.form-img-drop {
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  border-style: dashed;
+  border-color: var(--line-strong);
+  color: var(--muted);
+  transition: border-color 0.15s, background 0.15s;
+}
+.form-img-drop:hover {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+.form-img-drop-icon {
+  font-size: 32px;
+  line-height: 1;
+  font-weight: 300;
+}
+.form-img-drop-text {
+  font-size: 14px;
+}
+
+/* modal 两栏：左图右信息 */
+.modal-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.form-col-info {
+  min-width: 0; /* 防止 chips/输入把右栏撑破网格 */
+}
+/* 没图/识别中：右栏字段锁住、淡化以示"等图来了 AI 填"，不诱导提前输入。
+   只淡化字段控件，info-lock-hint 提示保持清晰（不在淡化选择器内）。 */
+.form-col-info.is-locked .field-label,
+.form-col-info.is-locked select,
+.form-col-info.is-locked input,
+.form-col-info.is-locked textarea,
+.form-col-info.is-locked .chips {
+  opacity: 0.5;
+}
+.info-lock-hint {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--tint);
+  color: var(--muted);
+  font-size: 13px;
+}
+/* 左栏图片占满列宽、不再 260 上限封顶 */
+.form-col-img .form-img {
+  max-height: none;
+}
+
+/* 有图态：hover 浮现「重新上传 / AI 识别」操作条 */
+.form-img.has-img {
+  position: relative;
+}
+.form-img-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 10px;
+  background: linear-gradient(transparent, rgba(28, 28, 28, 0.55));
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.form-img.has-img:hover .form-img-overlay {
+  opacity: 1;
+}
+/* 触屏没有 hover：操作条常驻 */
+@media (hover: none) {
+  .form-img-overlay {
+    opacity: 1;
+  }
+}
+.file-btn-overlay {
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.file-btn-overlay:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.file-btn {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--ink);
+}
+
+/* 标签多选 chips */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  padding: 6px 12px;
+  border-radius: var(--pill);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.chip.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+.form-err {
+  margin-top: 14px;
+  color: var(--danger);
+  font-size: 14px;
+  text-align: center;
+}
+.form-msg {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ===================== v0.9 成员自我编辑 ===================== */
+.my-profile {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 12px 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.my-profile input[type="text"] {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 16px;
+}
+.my-profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  margin: 0 auto 8px;
+  background: var(--tint);
+}
+.my-profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.my-profile-noimg {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 56px;
+  font-weight: 600;
+  color: var(--line-strong);
+}
+.my-profile-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(28, 28, 28, 0.5);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.my-profile-avatar:hover .my-profile-avatar-overlay,
+.my-profile-avatar:active .my-profile-avatar-overlay {
+  opacity: 1;
+}
+
+/* ---- 裁切 modal ---- */
+.avatar-crop-upload-btn {
+  display: block;
+  text-align: center;
+  padding: 14px 24px;
+  border: 2px dashed var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--tint);
+  transition: border-color 0.15s, background 0.15s;
+}
+.avatar-crop-upload-btn:hover {
+  border-color: var(--accent);
+  background: transparent;
+}
+.avatar-crop-source-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+.avatar-crop-source-grid img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--line);
+  cursor: pointer;
+  background: var(--tint);
+  transition: border-color 0.15s;
+}
+.avatar-crop-source-grid img:hover {
+  border-color: var(--accent);
+}
+.avatar-crop-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--muted);
+  padding: 24px 0;
+  font-size: 14px;
+}
+
+/* 裁切交互区 */
+.avatar-crop-viewport {
+  width: 300px;
+  height: 300px;
+  margin: 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+  background: var(--tint);
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+.avatar-crop-viewport:active {
+  cursor: grabbing;
+}
+.avatar-crop-image {
+  position: absolute;
+  /* transform 由 inline style 注入 */
+}
+.avatar-crop-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px dashed rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+.avatar-crop-zoom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 0 4px;
+}
+.avatar-crop-zoom input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+}
+.avatar-crop-zoom-label {
+  font-size: 14px;
+  color: var(--muted);
+  user-select: none;
+}
+.avatar-crop-reset {
+  font-size: 12px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.avatar-crop-reset:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+/* Persons 弹窗里每张图的裁为头像按钮 */
+.model-img-crop {
+  position: absolute;
+  top: 6px;
+  left: 68px; /* 紧挨 ✦ AI 编辑（约 60px 宽 + 6px left + 2px gap） */
+  padding: 2px 10px;
+  border-radius: var(--pill);
+  font-size: 12px;
+  border: none;
+  background: rgba(28, 28, 28, 0.55);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.model-img-wrap:hover .model-img-crop {
+  opacity: 1;
+}
+@media (hover: none) {
+  .model-img-crop {
+    opacity: 1;
+  }
+}
+
+.my-profile-sep {
+  border: none;
+  border-top: 1px solid var(--line);
+  width: 100%;
+  margin: 8px 0 4px;
+}
+.my-profile-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+}
+.my-profile-photo {
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--tint);
+  position: relative;
+}
+.my-profile-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.my-profile-photo-del {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(28, 28, 28, 0.55);
+  color: #fff;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.my-profile-photo:hover .my-profile-photo-del {
+  opacity: 1;
+}
+/* 参考照片底部操作条：设为底图 / 编辑（常驻）；当前生图底图标 ★ 并高亮边框 */
+.my-profile-photo-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  gap: 1px;
+}
+.ppbar-btn,
+.ppbar-base {
+  flex: 1;
+  border: none;
+  color: #fff;
+  font-size: 11px;
+  padding: 4px 0;
+  text-align: center;
+}
+.ppbar-btn {
+  background: rgba(28, 28, 28, 0.55);
+  cursor: pointer;
+}
+.ppbar-btn:hover {
+  background: rgba(28, 28, 28, 0.82);
+}
+.ppbar-base {
+  background: var(--accent);
+  font-weight: 600;
+}
+.my-profile-photo.is-base {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.gen-base-star {
+  color: var(--accent);
+  font-weight: 700;
+}
+.my-profile-photo-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px dashed var(--line-strong);
+  transition: background 0.15s;
+}
+.my-profile-photo-add:hover {
+  background: var(--tint);
+}
+.my-profile-photo-plus {
+  font-size: 28px;
+  color: var(--muted);
+}
+
+.tag-hint {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.tag-hint.busy::after {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-left: 6px;
+  border: 2px solid var(--line-strong);
+  border-top-color: transparent;
+  border-radius: 50%;
+  vertical-align: -1px;
+  animation: tag-spin 0.8s linear infinite;
+}
+@keyframes tag-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.saved-hint {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--accent);
+}
+
+/* v0.12 单品图库：主图大展示 + 缩略图条 + 生成动作 */
+.gmain-badge {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  background: rgba(28, 28, 28, 0.7);
+  color: #fff;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: var(--pill);
+}
+.gstrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.gthumb {
+  position: relative;
+  width: 88px;
+  height: 110px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--tint);
+  flex: 0 0 auto;
+}
+.gthumb.sel {
+  border-color: var(--line-strong);
+}
+.gthumb.primary {
+  border-color: var(--accent);
+}
+.gthumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.gstar,
+.gdel,
+.grot {
+  position: absolute;
+  top: 1px;
+  border: none;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  color: var(--muted);
+}
+.gstar {
+  left: 1px;
+}
+.gstar.on {
+  color: #e0a400;
+}
+.grot {
+  left: 30px;
+}
+.gdel {
+  right: 1px;
+}
+.gthumb.gadd {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: var(--muted);
+  border-style: dashed;
+  background: var(--surface);
+}
+.gen-actions {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edit-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.preset {
+  font-size: 12px;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+.preset:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.link-btn {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+/* 生成中的展位（同步几秒）：与缩略图同尺寸 + shimmer + 进度字 */
+.gthumb.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-style: dashed;
+  animation: gen-shimmer 1.4s ease-in-out infinite;
+  background: linear-gradient(100deg, var(--tint) 30%, rgba(28, 28, 28, 0.08) 50%, var(--tint) 70%);
+  background-size: 200% 100%;
+}
+.gthumb-progress {
+  font-size: 10px;
+  color: var(--muted);
+}
+/* v0.12 编辑 modal：整体宽度收窄约 15%（1024→870）；左栏=4 张缩略图宽（280px），主图随之 */
+.modal.item-form-modal {
+  max-width: 870px;
+}
+.item-form-modal .modal-grid {
+  grid-template-columns: 280px 1fr;
+}
+.item-form-modal .gstrip {
+  width: 280px; /* 3×88 + 2×8 = 280：一行 3 张 */
+}
+
+/* ===================== 移动端适配 ===================== */
+@media (max-width: 640px) {
+  /* 锁死 document，只让 .content 内部滚动。
+     body 必须 position:fixed —— iOS 在键盘聚焦时会无视 overflow:hidden 照样滚窗口，
+     只有固定 body 才能真正阻止「聚焦把顶栏顶出屏幕再弹回」的跳动。 */
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+  body {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+  }
+
+  /* 手机整页 = 顶栏 + 内容(伸缩滚动)的纵向 flex（固定定位钉死） */
+  .app {
+    display: flex;
+    flex-direction: column;
+    /* 固定定位钉死整页：window 无可滚动内容，键盘弹起时 iOS 不会把顶栏上推。
+       高度绑 visualViewport（见 App.tsx），键盘弹起时随之收缩到键盘上方。
+       --app-h/--app-top 由 JS 写入，未就绪时回退 100dvh。 */
+    position: fixed;
+    /* 跟随 visualViewport 缩放 + 位移到键盘上方：键盘弹起时 app 缩到键盘之上、
+       顶栏随之稳定、输入框自然在键盘上方。--app-h/--app-top 由 App.tsx 写入。 */
+    top: var(--app-top, 0);
+    left: 0;
+    right: 0;
+    height: var(--app-h, 100dvh);
+    min-height: 0; /* 覆盖基础 min-height:100vh，否则会撑高于可视区 */
+    overflow: hidden;
+  }
+  /* 移动端不用侧栏，导航回到顶栏 tab（管理区）/ 底部 tabbar（成员区） */
+  .sidebar {
+    display: none;
+  }
+  .topbar {
+    display: flex; /* 桌面默认 none，这里恢复 */
+    position: relative; /* 当前模特绝对定位到右上角的锚点 */
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  /* 手机窄，藏起长品牌，把空间让给三主 tab */
+  .brand {
+    display: none;
+  }
+  /* tab 居中占满整行（当前模特已绝对定位移出 flow，不再偏心） */
+  .tabs {
+    flex: 1;
+    justify-content: center;
+  }
+  /* 当前模特 + 切换符号：钉到右上角 */
+  .topbar-person {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
+    gap: 4px;
+  }
+  /* 成员空间：tab 下沉到底部 tabbar → 顶栏改回品牌(左) + 当前人(右)。
+     管理空间不变（tab 仍在顶部居中，品牌仍隐藏）。 */
+  .topbar-member .tabs {
+    display: none;
+  }
+  .topbar-member .brand {
+    display: flex; /* 不能用 block：品牌图标靠 flex 与文字对齐 */
+  }
+
+  /* 底部 tabbar：作 .app 最底 flex 子项（非 fixed，避开 iOS 底栏乱跳）。
+     .app 高度已绑 visualViewport → 键盘弹起时整块被顶到键盘上方。 */
+  .tabbar {
+    display: flex;
+    flex-shrink: 0;
+    border-top: 1px solid var(--line);
+    background: var(--bg);
+    /* 让开 iPhone home 指示条 */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabbar-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 7px 0 5px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .tabbar-item.active {
+    color: var(--ink);
+  }
+  .tabbar-item:active {
+    opacity: 0.6;
+  }
+  /* 键盘弹起：收起 tabbar，让输入框直接贴键盘（IM 体验） */
+  html.kb-open .tabbar {
+    display: none;
+  }
+  /* 成员空间底部安全区由 tabbar 兜底，content 不再叠加 env(safe-area)——
+     否则双倍留白、聊天输入悬空。管理空间(无 tabbar)的 .content 不受影响。
+     键盘弹起时仍走上面的 html.kb-open .content{padding-bottom:0}（特异性更高）。 */
+  .topbar-member + .content {
+    padding-bottom: 16px;
+  }
+  /* 对话页：去掉 content 顶部 padding，让 chat-log 紧贴顶栏分割线——
+     否则滚动裁切边落在分割线下方 16px，气泡在半空被切、像顶栏拖了一截遮住内容。
+     顶部呼吸感由 chat-log 自带的 padding-top:12px 提供（滚动时裁切仍在分割线处）。 */
+  .content.content-chat {
+    padding-top: 0;
+  }
+  /* 前门在手机上填满可视区 */
+  .gate {
+    min-height: 0;
+    flex: 1;
+  }
+  .gate-bar-inner {
+    padding: 12px 16px;
+  }
+  .gate-brand {
+    font-size: 16px;
+  }
+  .gate-title {
+    font-size: 28px;
+  }
+  .gate-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 28px 12px; /* 行间距 28px，列间距 12px */
+    padding: 0 16px;
+  }
+  .gate-card {
+    width: calc((100% - 24px) / 3); /* 3 张/行，末行不满居中 */
+  }
+  .gate-body > :first-child {
+    margin-top: 10vh;
+  }
+  .gate-body > :last-child {
+    margin-bottom: auto;
+  }
+  .content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain; /* 截断回弹链，防止拖动整个 fixed app */
+    /* 底部留出 iPhone Home 指示条安全区，输入框/列表不被遮 */
+    padding: 16px 12px calc(16px + env(safe-area-inset-bottom));
+  }
+  /* 键盘弹起时键盘已盖住底部安全区，收掉安全区留白；留 8px 让输入框不贴死键盘 */
+  html.kb-open .content {
+    padding-bottom: 8px;
+  }
+
+  /* 对话页填满内容区，输入框始终在底部 bar 之上。
+     chat-pane 补 height:100% 接上高度链（见 App.tsx），.chat 才能真正撑满、
+     chat-log 成为滚动区、输入框钉底不被键盘顶走。 */
+  .chat-pane {
+    height: 100%;
+  }
+  .chat {
+    height: 100%;
+  }
+
+  /* 网格：手机两列（搭配/模特等通用） */
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  /* 衣橱小卡视图：手机三列 */
+  .wardrobe-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  /* 列表视图：手机上隐藏标签行，保持一行一件的紧凑 */
+  .row-tags {
+    display: none;
+  }
+  /* 过滤组与工具组各占一行，手机上更好按 */
+  .wardrobe-head .filters,
+  .wardrobe-head .view-tools {
+    flex: 1 1 100%;
+    gap: 8px;
+  }
+  /* 件数推到筛选行最右 */
+  .wardrobe-head .filters .count {
+    margin-left: auto;
+  }
+
+  /* 手机上气泡占满宽 */
+  .bubble {
+    max-width: 90%;
+  }
+
+  /* 模特图在手机上自适应两列 */
+  .model-imgs img {
+    width: calc(50% - 6px);
+  }
+
+  /* 工具行：排序下拉吃掉左侧余量，卡片/列表切换贴右 */
+  .view-tools .sort-select {
+    flex: 1;
+    min-width: 0;
+  }
+  /* 「添加单品」单独占满整行，做成醒目主按钮——
+     既避免与排序/视图挤在一行溢出（窄屏溢出会把 fixed 弹层推出可视区），也更好按 */
+  .view-tools .btn-primary {
+    flex: 1 1 100%;
+    width: 100%;
+    padding: 13px 16px;
+  }
+
+  /* 表单 modal 在手机上全屏 + 两栏改单栏竖排。
+     弹层已 portal 到 body：用 --app-h/--app-top（visualViewport，见 App.tsx）把它钉死到
+     可视区，而非 inset:0 的布局视口——否则 iOS 上底部会被 Safari 工具栏/home 条盖住、滑不到。 */
+  .modal-backdrop {
+    padding: 0;
+    top: var(--app-top, 0);
+    bottom: auto;
+    height: var(--app-h, 100dvh);
+  }
+  .modal-grid,
+  .item-form-modal .modal-grid {
+    grid-template-columns: 1fr;
+  }
+  .item-form-modal .gstrip {
+    width: auto;
+  }
+  .gthumb {
+    width: calc((100% - 24px) / 4); /* 4 张/行，3 个 8px 间隙 */
+    height: auto;
+    aspect-ratio: 4 / 5;
+  }
+  /* 移动端：搭配卡缩略图条换行（窄屏放不下一行往后排） */
+  .outfit-items {
+    flex-wrap: wrap;
+  }
+  /* 单栏时方形展示区，图片 contain 自适应 */
+  .form-col-img .form-img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-height: none;
+    height: auto;
+    margin: 0;
+  }
+  .modal {
+    max-width: 100%;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border: none;
+    border-radius: 0;
+  }
+  .modal.modal-narrow {
+    width: auto;
+    height: auto;
+    max-height: 90vh;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+  }
+  /* 详情页移动端回落全屏（PC 是居中 modal） */
+  .item-detail-backdrop {
+    padding: 0;
+    background: transparent;
+  }
+  .item-detail {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    border: none;
+    border-radius: 0;
+  }
+  /* 宽版弹窗在手机上回落全屏（覆盖 50vw / 55vh） */
+  .modal.modal-half {
+    max-width: 100%;
+    height: 100%;
+  }
+  /* modal 底部按钮放大、留底部安全区，便于单手点按 */
+  .modal-foot {
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  }
+  .modal-foot .btn-primary,
+  .modal-foot .btn-ghost {
+    flex: 1;
+    padding: 12px 16px;
+  }
+}

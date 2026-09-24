@@ -1,0 +1,276 @@
+[
+  {
+    "id": "sample_01",
+    "image_path": "assets/items/samples/sample_01.jpg",
+    "name": "黑色马丁靴",
+    "gender": "unisex",
+    "category": "鞋",
+    "color": [
+      "黑"
+    ],
+    "season": [
+      "秋",
+      "冬"
+    ],
+    "description": "黑色系带中筒马丁靴，铆钉与双扣带装饰，厚底"
+  },
+  {
+    "id": "sample_02",
+    "image_path": "assets/items/samples/sample_02.jpg",
+    "name": "黑色牛津鞋",
+    "gender": "male",
+    "category": "鞋",
+    "color": [
+      "黑"
+    ],
+    "season": [
+      "春",
+      "秋",
+      "冬"
+    ],
+    "description": "黑色系带牛津皮鞋，横盖头，真皮鞋面"
+  },
+  {
+    "id": "sample_03",
+    "image_path": "assets/items/samples/sample_03.jpg",
+    "name": "棕色布洛克鞋",
+    "gender": "male",
+    "category": "鞋",
+    "color": [
+      "棕"
+    ],
+    "season": [
+      "春",
+      "秋"
+    ],
+    "description": "棕褐色雕花布洛克皮鞋，翼纹拼接，沿条工艺"
+  },
+  {
+    "id": "sample_04",
+    "image_path": "assets/items/samples/sample_04.jpg",
+    "name": "米白训练鞋",
+    "gender": "unisex",
+    "category": "鞋",
+    "color": [
+      "米白",
+      "藏蓝"
+    ],
+    "season": [
+      "春",
+      "秋"
+    ],
+    "description": "米白拼藏蓝复古训练鞋，三条纹，焦糖橡胶底"
+  },
+  {
+    "id": "sample_05",
+    "image_path": "assets/items/samples/sample_05.jpg",
+    "name": "黑白拼色跑鞋",
+    "gender": "unisex",
+    "category": "鞋",
+    "color": [
+      "白",
+      "黑"
+    ],
+    "season": [
+      "春",
+      "秋"
+    ],
+    "description": "黑白拼色复古跑鞋，皮革拼尼龙，焦糖齿底"
+  },
+  {
+    "id": "sample_06",
+    "image_path": "assets/items/samples/sample_06.jpg",
+    "name": "蓝灰立领衫",
+    "gender": "female",
+    "category": "内搭",
+    "color": [
+      "蓝灰"
+    ],
+    "season": [
+      "春",
+      "秋"
+    ],
+    "description": "蓝灰条纹立领衬衫，包扣门襟，腰部抽绳收束"
+  },
+  {
+    "id": "sample_07",
+    "image_path": "assets/items/samples/sample_07.jpg",
+    "name": "白色牛仔外套",
+    "gender": "unisex",
+    "category": "外套",
+    "color": [
+      "白"
+    ],
+    "season": [
+      "春",
+      "秋"
+    ],
+    "description": "白色短款牛仔外套，翻领，胸前双口袋，落肩版型"
+  },
+  {
+    "id": "sample_08",
+    "image_path": "assets/items/samples/sample_08.jpg",
+    "name": "卡其风衣",
+    "gender": "unisex",
+    "category": "外套",
+    "color": [
+      "卡其"
+    ],
+    "season": [
+      "春",
+      "秋"
+    ],
+    "description": "卡其色长款系带风衣，翻领暗门襟，落肩版型"
+  },
+  {
+    "id": "sample_09",
+    "image_path": "assets/items/samples/sample_09.jpg",
+    "name": "红色夹克",
+    "gender": "unisex",
+    "category": "外套",
+    "color": [
+      "红"
+    ],
+    "season": [
+      "春",
+      "秋"
+    ],
+    "description": "红色连帽防风夹克，抽绳帽，拉链门襟，斜插袋束口袖"
+  },
+  {
+    "id": "sample_10",
+    "image_path": "assets/items/samples/sample_10.jpg",
+    "name": "卡其直筒裤",
+    "gender": "unisex",
+    "category": "下装",
+    "color": [
+      "卡其"
+    ],
+    "season": [
+      "春",
+      "秋"
+    ],
+    "description": "卡其裸粉色直筒休闲长裤，松紧腰，后贴袋"
+  },
+  {
+    "id": "sample_11",
+    "image_path": "assets/items/samples/sample_11.jpg",
+    "name": "深蓝阔腿裤",
+    "gender": "female",
+    "category": "下装",
+    "color": [
+      "深蓝"
+    ],
+    "season": [
+      "春",
+      "秋"
+    ],
+    "description": "深蓝水洗阔腿牛仔裤，工装侧袋，高腰打褶"
+  },
+  {
+    "id": "sample_12",
+    "image_path": "assets/items/samples/sample_12.jpg",
+    "name": "深棕撞色运动裤",
+    "gender": "female",
+    "category": "下装",
+    "color": [
+      "深棕"
+    ],
+    "season": [
+      "春",
+      "秋"
+    ],
+    "description": "深棕色紧身运动打底裤，侧缝荧光粉撞色弧线，速干面料"
+  },
+  {
+    "id": "sample_13",
+    "image_path": "assets/items/samples/sample_13.jpg",
+    "name": "藏蓝短裤",
+    "gender": "unisex",
+    "category": "下装",
+    "color": [
+      "藏蓝"
+    ],
+    "season": [
+      "夏"
+    ],
+    "description": "藏蓝色针织运动短裤，松紧抽绳腰，侧插袋"
+  },
+  {
+    "id": "sample_14",
+    "image_path": "assets/items/samples/sample_14.jpg",
+    "name": "军绿长裙",
+    "gender": "female",
+    "category": "下装",
+    "color": [
+      "军绿"
+    ],
+    "season": [
+      "春",
+      "夏"
+    ],
+    "description": "军绿色棉质镂空长半裙，抽绳腰，多层大摆"
+  },
+  {
+    "id": "sample_15",
+    "image_path": "assets/items/samples/sample_15.jpg",
+    "name": "米白连衣裙",
+    "gender": "female",
+    "category": "整身",
+    "color": [
+      "米白"
+    ],
+    "season": [
+      "春",
+      "夏"
+    ],
+    "description": "米白色蕾丝镂空连衣裙，小飞袖，收腰A字版型"
+  },
+  {
+    "id": "sample_16",
+    "image_path": "assets/items/samples/sample_16.jpg",
+    "name": "黑色连衣裙",
+    "gender": "female",
+    "category": "整身",
+    "color": [
+      "黑"
+    ],
+    "season": [
+      "春",
+      "夏",
+      "秋"
+    ],
+    "description": "黑色短袖收腰连衣裙，腰部系带，A字大摆"
+  },
+  {
+    "id": "sample_17",
+    "image_path": "assets/items/samples/sample_17.jpg",
+    "name": "灰色棒球帽",
+    "gender": "unisex",
+    "category": "帽",
+    "color": [
+      "灰"
+    ],
+    "season": [
+      "春",
+      "秋"
+    ],
+    "description": "灰色棉质弯檐棒球帽，前绣小马标"
+  },
+  {
+    "id": "sample_18",
+    "image_path": "assets/items/samples/sample_18.jpg",
+    "name": "黑色棒球帽",
+    "gender": "unisex",
+    "category": "帽",
+    "color": [
+      "黑"
+    ],
+    "season": [
+      "春",
+      "秋",
+      "冬"
+    ],
+    "description": "黑色水洗弯檐棒球帽，前缀皮革方标"
+  }
+]

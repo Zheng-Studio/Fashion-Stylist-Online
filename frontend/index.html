@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover：让页面铺满刘海/底部安全区，env(safe-area-inset-*) 才会生效 -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>FashionStylist</title>
+
+    <!-- 加到主屏后以独立 App 方式启动（无地址栏/工具栏） -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- 浅色主题用 default：状态栏深色文字，内容在状态栏下方不被遮挡 -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <!-- 主屏图标下的名字 -->
+    <meta name="apple-mobile-web-app-title" content="穿搭助手" />
+    <meta name="theme-color" content="#f7f4ed" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- 标签页图标：ico 内含 16/32/48 三档，浏览器按 DPI 自取；png 给支持的浏览器用高清版 -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" href="/icon-192.png" sizes="192x192" />
+    <!-- iOS 主屏图标：必须不透明（留白会被 iOS 填黑），故这张是满铺粉底版，圆角由 iOS 自己切 -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
