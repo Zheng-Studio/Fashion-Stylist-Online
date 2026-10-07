@@ -20,13 +20,13 @@ class Settings(BaseSettings):
     llm_json_mode: str = "json_object"  # json_schema / json_object / none
     llm_timeout: float = 120
 
-    # 生图（OpenAI 兼容 images/edits）；base_url / key 为空则沿用 LLM 的
+    # 生图（OpenAI 兼容 images/generations + images）；base_url / key 为空则沿用 LLM 的
     image_base_url: str = ""
     image_api_key: str = ""
     image_model: str = ""
     image_size: str = ""  # 空 = 不传，由接口默认
     image_timeout: float = 300
-    tryon_mode: str = "single"  # single / serial
+    tryon_mode: str = "single"
 
     # 文件存储（本地实现；以后换对象存储只换 storage 实现）
     storage_dir: Path = BACKEND_DIR / "data" / "files"

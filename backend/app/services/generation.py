@@ -67,7 +67,7 @@ def _dress(db, gen: Generation, image_gen: ImageGen, storage: Storage, billing: 
     except FileNotFoundError as e:
         raise GenerationError(f"图片文件缺失：{e}") from e
 
-    mode = get_settings().tryon_mode
+    mode = "single"
     total = len(items)
     common = {"total": total, "base": base_key, "model": getattr(image_gen, "model", ""), "mode": mode}
 
@@ -75,20 +75,10 @@ def _dress(db, gen: Generation, image_gen: ImageGen, storage: Storage, billing: 
         gen.params = {**common, "done": done, "current": current}
         db.commit()
 
-    if mode == "serial":
-        prompts = []
-        current = person
-        for i, (it, garment) in enumerate(zip(items, garments)):
-            progress(i, dressing.garment_name(it))
-            prompt = dressing.serial_prompt(it)
-            prompts.append({"item": dressing.garment_name(it), "prompt": prompt})
-            current = imaging.normalize_to_jpeg(image_gen.edit([current, garment], prompt))
-        result = current
-    else:
-        progress(0, "整套")
-        prompt = dressing.single_prompt(items)
-        prompts = [{"item": "整套（" + "、".join(dressing.garment_name(it) for it in items) + "）", "prompt": prompt}]
-        result = imaging.normalize_to_jpeg(image_gen.edit([person, *garments], prompt))
+    progress(0, "整套")
+    prompt = dressing.single_prompt(items)
+    prompts = [{"item": "整套（" + "、".join(dressing.garment_name(it) for it in items) + "）", "prompt": prompt}]
+    result = imaging.normalize_to_jpeg(image_gen.edit([person, *garments], prompt))
 
     key = f"u/{user.id}/generations/{gen.id}.jpg"
     storage.put(key, result)

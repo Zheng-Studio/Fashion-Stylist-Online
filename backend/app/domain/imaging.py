@@ -7,8 +7,8 @@ from PIL import Image, ImageOps
 STORE_LONG_EDGE = 1280
 STORE_QUALITY = 85
 
-# 白底标准照统一成 3:4 竖图（和家庭版 ComfyUI 归一化的 960×1280 同口径）
-NORMALIZED_SIZE = (960, 1280)
+# 白底标准照统一成 1280×1280 方图
+NORMALIZED_SIZE = (1280, 1280)
 
 
 def open_image(raw: bytes) -> Image.Image:
@@ -50,7 +50,7 @@ def rotate_clockwise(raw: bytes) -> bytes:
 
 
 def pad_to_canvas(raw: bytes, size: tuple[int, int] = NORMALIZED_SIZE) -> bytes:
-    """等比缩进白底画布并居中（生图接口出的白底图尺寸不一，统一成 3:4）。"""
+    """等比缩进白底画布并居中（生图接口出的白底图尺寸不一，统一成方图）。"""
     im = _to_rgb(open_image(raw))
     im.thumbnail(size)
     canvas = Image.new("RGB", size, (255, 255, 255))

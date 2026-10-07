@@ -98,7 +98,7 @@ cd backend
 
 ## 配置
 
-全部走环境变量或 `backend/.env`，完整列表见 [backend/.env.example](backend/.env.example)。关键几项：
+全部走环境变量或 `backend/.env`。真实 `.env` 含 API 密钥，不提交到 Git；克隆后复制 `backend/.env.example` 为 `backend/.env`，按模型服务商提供的信息填写地址、密钥和模型 ID。模板中非空的 `IMAGE_SIZE=1728x2304` 是当前默认的 3:4 生图尺寸；若更换模型，请确认它支持该尺寸。完整列表见 [backend/.env.example](backend/.env.example)。关键几项：
 
 | 变量 | 说明 |
 |---|---|
@@ -107,6 +107,7 @@ cd backend
 | `LLM_VISION_MODEL` | 自动打标用的视觉模型，不填沿用 `LLM_MODEL` |
 | `LLM_JSON_MODE` | `json_schema` / `json_object`（默认）/ `none`，按厂商支持程度选 |
 | `IMAGE_MODEL`（+ `IMAGE_BASE_URL` / `IMAGE_API_KEY`） | 生图接口，地址和 key 不填沿用 LLM 的 |
+| `IMAGE_SIZE` | 生图输出宽高像素，如 `1728x2304`；当前默认 3:4，尺寸须受所选模型支持 |
 | `TRYON_MODE` | `single`（默认，人物 + 全部单品一次调用）/ `serial`（逐件，接口只收 2 张图时用） |
 | `AUTH_MODE` / `BILLING_MODE` | `dev` / `ledger`（对接 Lucimix 前） |
 

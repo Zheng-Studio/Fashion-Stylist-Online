@@ -1,0 +1,42 @@
+[
+  {
+    "model": "doubao-seedream-4.5",
+    "requested_size": "4K",
+    "status": 200,
+    "elapsed_seconds": 19.77,
+    "actual_size": "4704x3520",
+    "format": "JPEG",
+    "image_file": "doubao-seedream-4.5-4K.jpeg",
+    "error": null
+  },
+  {
+    "model": "doubao-seedream-5.0-lite",
+    "requested_size": "4K",
+    "status": 200,
+    "elapsed_seconds": 21.27,
+    "actual_size": "4096x4096",
+    "format": "JPEG",
+    "image_file": "doubao-seedream-5.0-lite-4K.jpeg",
+    "error": null
+  },
+  {
+    "model": "gpt-image-2-medium",
+    "requested_size": "3840x2160",
+    "status": 200,
+    "elapsed_seconds": 43.88,
+    "actual_size": "3840x2160",
+    "format": "PNG",
+    "image_file": "gpt-image-2-medium-3840-2160.png",
+    "error": null
+  },
+  {
+    "model": "gpt-image-2-high",
+    "requested_size": "3840x2160",
+    "status": 200,
+    "elapsed_seconds": 43.07,
+    "actual_size": "3840x2160",
+    "format": "PNG",
+    "image_file": "gpt-image-2-high-3840-2160.png",
+    "error": null
+  }
+]

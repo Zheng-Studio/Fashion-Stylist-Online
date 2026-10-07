@@ -1,14 +1,12 @@
-"""生图：OpenAI 兼容协议的 images/edits。
+"""生图：OpenAI 兼容协议的 images/generations。
 
 换装、单品 AI 编辑、白底标准照三件事都是「若干张输入图 + 一句指令 → 一张新图」，
-所以只需要一个 edit() 能力。多图输入（人物 + 多件单品一次换装）要看供应商是否支持，
-不支持就把 TRYON_MODE 设成 serial，逐件两两输入。
+所以只需要一个 edit() 能力。多图输入时，人物和全部单品一次放进 image 数组。
 """
 import base64
 from typing import Protocol
 
 import httpx
-import openai
 
 from app.config import Settings
 from app.providers.errors import ProviderError
@@ -26,56 +24,53 @@ class OpenAICompatImage:
     def __init__(self, settings: Settings):
         self.settings = settings
         self.model = settings.image_model
-        self._client: openai.OpenAI | None = None
-
-    def _get_client(self) -> openai.OpenAI:
-        s = self.settings
-        if not (s.image_base and s.image_model):
-            raise ProviderError("生图接口未配置：请在 backend/.env 里填写 IMAGE_MODEL（及 IMAGE_BASE_URL / IMAGE_API_KEY，不填则沿用 LLM 的）。")
-        if self._client is None:
-            self._client = openai.OpenAI(
-                base_url=s.image_base, api_key=s.image_key or "none", timeout=s.image_timeout
-            )
-        return self._client
 
     def edit(self, images: list[bytes], prompt: str) -> bytes:
         if not images:
             raise ProviderError("生图至少需要一张输入图。")
-        client = self._get_client()
-        files = [(f"image{i + 1}.jpg", data, "image/jpeg") for i, data in enumerate(images)]
-        kwargs: dict = {
+        s = self.settings
+        if not (s.image_base and s.image_model):
+            raise ProviderError("生图接口未配置：请在 backend/.env 里填写 IMAGE_MODEL（及 IMAGE_BASE_URL / IMAGE_API_KEY，不填则沿用 LLM 的）。")
+        payload: dict = {
             "model": self.model,
-            # 单图时传单个文件：有的实现不接受数组
-            "image": files if len(files) > 1 else files[0],
             "prompt": prompt,
+            "image": [
+                "data:image/jpeg;base64," + base64.b64encode(image).decode("ascii") for image in images
+            ],
             "n": 1,
+            "sequential_image_generation": "disabled",
         }
-        if self.settings.image_size:
-            kwargs["size"] = self.settings.image_size
+        if s.image_size:
+            payload["size"] = s.image_size
         try:
-            resp = client.images.edit(**kwargs)
-        except openai.APITimeoutError as e:
-            raise ProviderError(f"生图超时（>{self.settings.image_timeout:.0f}s），请稍后重试。") from e
-        except openai.APIConnectionError as e:
-            raise ProviderError(f"连不上生图服务（{self.settings.image_base}）。") from e
-        except openai.APIStatusError as e:
-            raise ProviderError(f"生图接口返回错误 {e.status_code}：{(e.response.text or str(e))[:300]}") from e
-        except openai.OpenAIError as e:
+            response = httpx.post(
+                s.image_base.rstrip("/") + "/images/generations",
+                headers={"Authorization": f"Bearer {s.image_key or 'none'}"},
+                json=payload,
+                timeout=s.image_timeout,
+            )
+            response.raise_for_status()
+            result = response.json()
+        except httpx.TimeoutException as e:
+            raise ProviderError(f"生图超时（>{s.image_timeout:.0f}s），请稍后重试。") from e
+        except httpx.HTTPStatusError as e:
+            raise ProviderError(f"生图接口返回错误 {e.response.status_code}：{e.response.text[:300]}") from e
+        except (httpx.HTTPError, ValueError) as e:
             raise ProviderError(f"调用生图接口失败：{e}") from e
-        return _first_image(resp, self.settings.image_timeout)
+        return _first_image(result, s.image_timeout)
 
 
 def _first_image(resp, timeout: float) -> bytes:
     """取第一张结果：优先 b64_json，其次 url（有的供应商只给临时链接）。"""
-    data = getattr(resp, "data", None) or []
+    data = resp.get("data") or []
     if not data:
         raise ProviderError("生图接口没有返回图片。")
     first = data[0]
-    if getattr(first, "b64_json", None):
-        return base64.b64decode(first.b64_json)
-    if getattr(first, "url", None):
+    if first.get("b64_json"):
+        return base64.b64decode(first["b64_json"])
+    if first.get("url"):
         try:
-            r = httpx.get(first.url, timeout=timeout)
+            r = httpx.get(first["url"], timeout=timeout)
             r.raise_for_status()
         except httpx.HTTPError as e:
             raise ProviderError(f"下载生图结果失败：{e}") from e

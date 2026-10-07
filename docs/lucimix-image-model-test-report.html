@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lucimix 图像模型测试报告</title>
+  <style>
+    :root { color-scheme:light; --ink:#17242a; --muted:#637178; --line:#d9e1df; --paper:#f3f6f4; --white:#fff; --teal:#08796f; --teal-bg:#e2f2ed; --amber:#90551a; --amber-bg:#fff0dc; --gray-bg:#e9eeec; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--paper); font:15px/1.55 "Segoe UI","Microsoft YaHei",sans-serif; }
+    main { width:min(1100px,calc(100% - 36px)); margin:30px auto 60px; }
+    header { padding:20px 0; border-bottom:2px solid var(--ink); display:flex; justify-content:space-between; gap:20px; align-items:end; }
+    h1 { margin:0; font-size:30px; line-height:1.2; }
+    h2 { margin:30px 0 12px; font-size:21px; }
+    p { margin:7px 0; }
+    .muted,.date,.small { color:var(--muted); }
+    .date { white-space:nowrap; font-size:14px; }
+    .summary { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:16px 0; }
+    .metric { background:var(--white); border:1px solid var(--line); border-radius:5px; padding:12px 15px; }
+    .metric strong { display:block; font-size:23px; }
+    .metric span,.small { font-size:13px; }
+    .callout { background:var(--teal-bg); border-left:4px solid var(--teal); padding:12px 15px; }
+    .table-wrap { overflow:auto; background:var(--white); border:1px solid var(--line); border-radius:5px; }
+    table { width:100%; border-collapse:collapse; min-width:760px; }
+    th,td { text-align:left; vertical-align:top; padding:9px 11px; border-bottom:1px solid var(--line); }
+    th { background:#ebf0ee; font-size:13px; white-space:nowrap; }
+    tbody tr:last-child td { border-bottom:0; }
+    tbody tr.unmeasured { background:#f7f9f8; color:#536168; }
+    code { font:0.92em Consolas,monospace; background:#edf1ef; border-radius:3px; padding:2px 5px; white-space:nowrap; }
+    .badge { display:inline-block; border-radius:99px; padding:2px 8px; font-size:12px; white-space:nowrap; }
+    .pass { color:#075e55; background:var(--teal-bg); }
+    .fail { color:#854315; background:var(--amber-bg); }
+    .na { color:#48575c; background:var(--gray-bg); }
+    .gallery { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    figure { margin:0; background:var(--white); border:1px solid var(--line); border-radius:5px; overflow:hidden; }
+    figure img { display:block; width:100%; height:190px; object-fit:contain; background:#edf0ef; }
+    figcaption { padding:8px 10px; font-size:13px; }
+    figcaption span { display:block; color:var(--muted); font-size:12px; }
+    footer { margin-top:28px; border-top:1px solid var(--line); padding-top:11px; color:var(--muted); font-size:12px; }
+    @media(max-width:720px) { main { width:calc(100% - 24px); margin-top:16px; } header { display:block; } .date { margin-top:8px; } .summary { grid-template-columns:1fr; } .gallery { grid-template-columns:repeat(2,minmax(0,1fr)); } figure img { height:165px; } }
+    @media(max-width:420px) { .gallery { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Lucimix 图像模型测试报告</h1>
+      <p class="muted">Doubao Seedream 与 GPT Image 2 · 分辨率实测</p>
+    </div>
+    <div class="date">2026-09-27</div>
+  </header>
+
+  <section class="summary" aria-label="测试摘要">
+    <div class="metric"><strong>4 / 4</strong><span>4K 请求成功</span></div>
+    <div class="metric"><strong>13 张</strong><span>成功生成并检查尺寸的测试图片</span></div>
+    <div class="metric"><strong>23 个</strong><span>GPT Image 白名单尺寸尚未实测</span></div>
+  </section>
+
+  <div class="callout"><strong>结论：</strong>4 个模型的 4K 请求均成功，另有指定比例测试成功。下表逐行列出每个模型和尺寸；GPT Image 2 网关公布的 30 个尺寸中，7 个已有成功实测记录，剩余 23 个标为未测。两个不在白名单中的尺寸请求被拒绝。</div>
+
+  <h2>全部尺寸结果</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>模型</th><th>请求尺寸</th><th>实际输出尺寸</th><th>状态</th><th>备注</th></tr></thead>
+    <tbody>
+      <tr><td><code>doubao-seedream-4.5</code></td><td><code>4K</code></td><td>4704×3520 · JPEG</td><td><span class="badge pass">成功</span></td><td>19.77 秒</td></tr>
+      <tr><td><code>doubao-seedream-4.5</code></td><td><code>1664×2496</code> · 2:3</td><td>1664×2496 · JPEG</td><td><span class="badge pass">成功</span></td><td>7.70 秒</td></tr>
+      <tr><td><code>doubao-seedream-5.0-lite</code></td><td><code>4K</code></td><td>4096×4096 · JPEG</td><td><span class="badge pass">成功</span></td><td>21.27 秒</td></tr>
+      <tr><td><code>gpt-image-2-medium</code></td><td><code>1024×1024</code></td><td>1024×1024 · PNG</td><td><span class="badge pass">成功</span></td><td>方图；耗时未记录</td></tr>
+      <tr><td><code>gpt-image-2-medium</code></td><td><code>896×1120</code></td><td>896×1120 · PNG</td><td><span class="badge pass">成功</span></td><td>竖图；耗时未记录</td></tr>
+      <tr><td><code>gpt-image-2-medium</code></td><td><code>1120×896</code></td><td>1120×896 · PNG</td><td><span class="badge pass">成功</span></td><td>横图；耗时未记录</td></tr>
+      <tr><td><code>gpt-image-2-medium</code></td><td><code>2336×3504</code> · 2:3</td><td>2336×3504 · PNG</td><td><span class="badge pass">成功</span></td><td>70.22 秒</td></tr>
+      <tr><td><code>gpt-image-2-medium</code></td><td><code>3840×2160</code> · 4K</td><td>3840×2160 · PNG</td><td><span class="badge pass">成功</span></td><td>43.88 秒</td></tr>
+      <tr><td><code>gpt-image-2-medium</code></td><td><code>1024×1536</code></td><td>—</td><td><span class="badge fail">拒绝</span></td><td>HTTP 400；不在支持列表</td></tr>
+      <tr><td><code>gpt-image-2-medium</code></td><td><code>1536×1024</code></td><td>—</td><td><span class="badge fail">拒绝</span></td><td>HTTP 400；不在支持列表</td></tr>
+      <tr><td><code>gpt-image-2-high</code></td><td><code>1024×1024</code></td><td>1024×1024 · PNG</td><td><span class="badge pass">成功</span></td><td>方图；耗时未记录</td></tr>
+      <tr><td><code>gpt-image-2-high</code></td><td><code>896×1120</code></td><td>896×1120 · PNG</td><td><span class="badge pass">成功</span></td><td>竖图；耗时未记录</td></tr>
+      <tr><td><code>gpt-image-2-high</code></td><td><code>1120×896</code></td><td>1120×896 · PNG</td><td><span class="badge pass">成功</span></td><td>横图；耗时未记录</td></tr>
+      <tr><td><code>gpt-image-2-high</code></td><td><code>2448×3264</code> · 3:4</td><td>2448×3264 · PNG</td><td><span class="badge pass">成功</span></td><td>64.90 秒</td></tr>
+      <tr><td><code>gpt-image-2-high</code></td><td><code>3840×2160</code> · 4K</td><td>3840×2160 · PNG</td><td><span class="badge pass">成功</span></td><td>43.07 秒</td></tr>
+      <tr><td><code>gpt-image-2-high</code></td><td><code>1024×1536</code></td><td>—</td><td><span class="badge fail">拒绝</span></td><td>HTTP 400；不在支持列表</td></tr>
+      <tr><td><code>gpt-image-2-high</code></td><td><code>1536×1024</code></td><td>—</td><td><span class="badge fail">拒绝</span></td><td>HTTP 400；不在支持列表</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>1152×864</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>864×1152</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>1248×832</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>832×1248</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>1280×720</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>720×1280</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>1456×624</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>2048×2048</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>2240×1792</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>1792×2240</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>2304×1728</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>1728×2304</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>2496×1664</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr><td><code>gpt-image-2-medium</code></td><td><code>1664×2496</code> · 2:3</td><td>1664×2496</td><td><span class="badge pass">成功</span></td><td>用户实测</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>2560×1440</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>1440×2560</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>3024×1296</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>2880×2880</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>3200×2560</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>2560×3200</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>3264×2448</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>3504×2336</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>2160×3840</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+      <tr class="unmeasured"><td>GPT Image 2 medium / high</td><td><code>3696×1584</code></td><td>—</td><td><span class="badge na">未测</span></td><td>共用白名单；未分别验证</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small">Doubao 的 <code>4K</code> 是尺寸档位，不等于固定像素；以实际输出尺寸为准。</p>
+
+  <p class="small">13 张生成结果已检查实际像素尺寸。图片文件因体积较大不纳入仓库；对应的尺寸、格式和状态记录保留在本报告与 JSON 摘要中。</p>
+
+  <p class="small"><strong>Gemini 3.1：</strong>模型列表标记为 <code>async_image</code>，本次同步图片接口测试不适用；异步流程和分辨率尚未测试。</p>
+
+  <footer>统一提示词：白色陶瓷杯、纯色背景、主体居中。图片均已下载并检查实际像素尺寸。</footer>
+</main>
+</body>
+</html>

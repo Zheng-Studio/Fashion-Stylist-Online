@@ -1,0 +1,35 @@
+[
+  {
+    "model": "doubao-seedream-4.5",
+    "ratio": "2:3",
+    "requested_size": "1664x2496",
+    "status": 200,
+    "elapsed_seconds": 7.7,
+    "actual_size": "1664x2496",
+    "format": "JPEG",
+    "image_file": "doubao-seedream-4.5-2-3-1664x2496.jpg",
+    "error": null
+  },
+  {
+    "model": "gpt-image-2-medium",
+    "ratio": "2:3",
+    "requested_size": "2336x3504",
+    "status": 200,
+    "elapsed_seconds": 70.22,
+    "actual_size": "2336x3504",
+    "format": "PNG",
+    "image_file": "gpt-image-2-medium-2-3-2336x3504.png",
+    "error": null
+  },
+  {
+    "model": "gpt-image-2-high",
+    "ratio": "3:4",
+    "requested_size": "2448x3264",
+    "status": 200,
+    "elapsed_seconds": 64.9,
+    "actual_size": "2448x3264",
+    "format": "PNG",
+    "image_file": "gpt-image-2-high-3-4-2448x3264.png",
+    "error": null
+  }
+]

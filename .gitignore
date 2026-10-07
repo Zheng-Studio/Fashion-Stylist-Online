@@ -15,6 +15,11 @@ dist/
 # 本地数据：SQLite 库 + 本地存储的文件（用户上传 / 生成图）
 backend/data/
 
+# 生图模型测试产物（报告和摘要保留在 Git，原图本地保留）
+docs/lucimix-image-results/*.jpg
+docs/lucimix-image-results/*.jpeg
+docs/lucimix-image-results/*.png
+
 # 环境 / 密钥
 .env
 *.local

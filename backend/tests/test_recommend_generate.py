@@ -89,7 +89,8 @@ def test_generation_single_mode(client, image_gen):
     assert _charges() == [("tryon", gen["id"])]
 
 
-def test_generation_serial_mode(client, image_gen, settings, monkeypatch):
+def test_generation_always_uses_single_mode(client, image_gen, settings, monkeypatch):
+    # 兼容旧配置值，但产品固定采用一次性换装。
     monkeypatch.setattr(settings, "tryon_mode", "serial")
     coat = create_item(client, "外套", "风衣")
     top = create_item(client, "内搭", "衬衫")
@@ -98,8 +99,8 @@ def test_generation_serial_mode(client, image_gen, settings, monkeypatch):
                          headers=auth("alice")).json()["id"]
     gen = client.get(f"/api/generations/{gen_id}", headers=auth("alice")).json()
     assert gen["status"] == "done"
-    assert [c["n_images"] for c in image_gen.calls] == [2, 2]
-    assert "衬衫" in image_gen.calls[0]["prompt"] and "风衣" in image_gen.calls[1]["prompt"]
+    assert [c["n_images"] for c in image_gen.calls] == [3]
+    assert "衬衫" in image_gen.calls[0]["prompt"] and "风衣" in image_gen.calls[0]["prompt"]
 
 
 def test_generation_requires_photo(client, image_gen):
@@ -131,7 +132,7 @@ def test_image_normalize_is_padded_and_charged(client, image_gen):
         headers=auth("alice"),
     )
     assert r.status_code == 200
-    assert Image.open(io.BytesIO(r.content)).size == (960, 1280)
+    assert Image.open(io.BytesIO(r.content)).size == (1280, 1280)
     assert [a for a, _ in _charges()] == ["image_normalize"]
 
 
