@@ -28,10 +28,19 @@
 - **现在的处理**：`app/db.py` 在引擎的 `connect` 事件里统一打开，所有连接（含 alembic）都走 `make_engine()`。Postgres 没这个问题。外键一律 `ON DELETE CASCADE`：删单品 = 搭配里少掉那一件，搭配本身作为历史保留。
 - **教训**：**声明了外键 ≠ 外键生效**，要用真实的 DELETE 去验（`tests/test_recommend_generate.py::test_deleting_item_keeps_outfit`）。
 
-### 3. uvicorn `--reload` 在 Windows 常漏接代码编辑
-- **现象**：改了 `.py` 后接口仍是旧行为，日志里没有对应文件的 "Reloading" 记录。
-- **原因**：WatchFiles 在 Windows 下对某些（原子）写入不触发。
-- **解法**：改完后端**手动干净重启**（停旧进程再起），别假设 reload 生效。详见记忆。
+### 3. uvicorn `--reload` 在 Windows 上重启一次后彻底卡死
+- **现象**：改第一次 `.py` 会重载，之后再怎么改都没有 "Reloading" 日志，reloader 静默卡住；旧子进程还活着、继续占着端口（→ #5b）。
+- **实测结论**（uvicorn 0.53.0 + watchfiles 1.3.0）：**不是 watchfiles 的问题**。直接调 `watchfiles.watch()` 时 added / modified / deleted 全部正常收到，编辑器的原子写入（tmp + rename）也收得到。卡住的是 uvicorn 自己的 `BaseReload.restart()`：
+  ```python
+  os.kill(self.process.pid, signal.CTRL_C_EVENT)   # 立刻返回，但子进程根本没收到
+  self.process.join()                              # 永久阻塞在这里
+  ```
+  `CTRL_C_EVENT` 底层是 `GenerateConsoleCtrlEvent`，只能广播给**控制台进程组**；multiprocessing spawn 出来的子进程不是独立进程组，信号落不到它身上，`join()` 就一直等下去。
+- **解法**：别用 `uvicorn --reload`，改用 `backend/dev.py`（基于 `watchfiles.run_process()`）。它用 `os.kill(pid, SIGINT)` 停子进程，在 Windows 上 CPython 会走 `TerminateProcess` 硬杀，可靠。两个启动脚本（`start-backend.bat` / `启动Online.bat`）都已改成走它。
+  ```powershell
+  cd backend ; .\.venv\Scripts\python.exe dev.py    # 默认 127.0.0.1:8000；DEV_HOST=0.0.0.0 开局域网
+  ```
+- **教训**：失效点在 uvicorn 的进程重启逻辑，不在文件监视层——别再去调 `WATCHFILES_FORCE_POLLING` 之类的参数（实测无效）。
 
 ### 5. Python 依赖别装全局
 - **现象**：`pip install httpx` 进了全局解释器。

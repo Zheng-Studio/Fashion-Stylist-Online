@@ -19,8 +19,8 @@ if not exist ".env" (
 
 echo Starting backend at http://127.0.0.1:8000
  echo API docs: http://127.0.0.1:8000/docs
- echo Press Ctrl+C to stop.
+ echo Hot reload is ON (via dev.py). Press Ctrl+C to stop.
 
-.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+.venv\Scripts\python.exe dev.py
 
 endlocal

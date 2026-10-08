@@ -14,14 +14,23 @@
 - [x] 测试：后端 18 条（临时库 + 假模型），前端 token 处理 4 条
 - [x] 去掉心愿单（迁移 `drop wishlist`）：衣橱里的单品全部参与选款
 
-## 下一步
+## 进行中
 
 ### M1 · 用真实接口验证（最大风险，最先做）
-- [ ] 填入大模型接口，验证选款：结构化输出用哪种 `LLM_JSON_MODE` 最稳，选款质量是否与家庭版相当
-- [ ] 验证自动打标：视觉模型是否可用、字段是否稳定
-- [ ] **验证生图接口能否一次输入多张图**（人物 + 多件单品）：决定 `TRYON_MODE` 用 single 还是 serial
-- [ ] 换装效果评估：用示例数据跑几组，对比 single / serial 的效果和耗时；按需调 `domain/dressing.py` 的提示词
+
+当前配置：`LLM_MODEL=deepseek-flash`（`LLM_JSON_MODE=json_object`）/ `IMAGE_MODEL=doubao-seedream-4.5`（`IMAGE_SIZE=1728x2304`），两个口子都走 Lucimix 网关 `https://bizapi.lucimix.com/v1`。
+
+- [x] 大模型接口打通：`deepseek-flash` + `json_object` 返回合法 JSON，选款文本链路通（1.7s）
+- [x] 自动打标：`deepseek-flash` 自带 vision，字段完整稳定（5.2s）→ **不用单独配 `LLM_VISION_MODEL`**
+- [x] 生图接入 Lucimix 网关 `/v1/images/generations`（JSON body，参考图字段 `image`），接入方式见 [lucimix-image-api.md](lucimix-image-api.md)
+- [x] **验证生图接口能一次输入多张图**：`doubao-seedream-4.5` 支持 1 人 + 多件单品一次调用（实测 5 张输入）→ **结论：固定 single，serial 模式已删**
+- [x] 换装效果评估（单组）：1 人 + 4 件（内搭 / 下装 / 外套 / 鞋）36.6s，输出 1728x2304，单画面、单人物、无拼贴
+- [x] `IMAGE_SIZE` 对 Seedream 生效：请求 1728x2304，输出尺寸一致
+- [ ] 用真实衣橱跑完整选款流程，评估选款质量——目前只用「2 个候选」的极简 case 验过，句柄协议 / 结构校验 / 重试都没在真实规模下压过
+- [ ] 换装多跑几组，覆盖叠穿、整身（连衣裙）、配饰、帽子等场景，按需调 `domain/dressing.py` 提示词
 - [ ] 白底标准照、AI 编辑的效果评估
+
+## 下一步
 
 ### M2 · 对接 Lucimix
 - [ ] 登录：确认 token 的传递方式（URL 参数 / postMessage）与校验接口，实现 `LucimixAuth`
@@ -39,3 +48,7 @@
 - [ ] 新用户的空衣橱引导（是否给示例单品）
 - [ ] UI 改版（现沿用家庭版样式，`styles.css` 里还有已删页面的旧样式可清理）
 - [ ] 旋转后取消编辑会留下孤儿文件，需要定期清理
+- [ ] **生成图带「AI生成」水印**（右下角）：商业功能要不要保留、能否去掉，待确认
+- [ ] 生图耗时偏长（5 张 36.6s）而 `TASK_WORKERS=2`：用户等待与并发都要评估（关联 M3）
+- [ ] 换模型注意：网关上的纯文本模型（`deepseek-v4-pro`、`glm-5.1/5.2/5.3`）**不能**当视觉模型；`gemini-3.1` 是 `async_image`（异步取结果），与现在同步的 `providers/image.py` 不兼容
+- [ ] 清理死代码：`domain/dressing.py` 的 `serial_prompt()`、`config.tryon_mode`（换装已固定 single）

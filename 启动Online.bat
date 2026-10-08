@@ -30,11 +30,13 @@ echo Phone  : http://%LANIP%:5173  (same Wi-Fi; allow firewall access if prompte
 echo API    : http://127.0.0.1:8000/docs
 echo.
 echo Frontend starts in a separate window. Close that window to stop it.
-echo Backend runs in this window. Press Ctrl+C here to stop it.
+echo Backend runs in this window with hot reload ON (via dev.py).
+echo Press Ctrl+C here to stop it.
 echo.
 
 start "Fashion Stylist Online Frontend" /D "%~dp0frontend" cmd /k "npm run dev -- --host 0.0.0.0"
 cd /d "%~dp0backend"
-.venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+set "DEV_HOST=0.0.0.0"
+.venv\Scripts\python.exe dev.py
 
 endlocal
