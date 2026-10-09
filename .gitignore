@@ -29,3 +29,8 @@ docs/lucimix-image-results/*.png
 Thumbs.db
 .vscode/
 .idea/
+
+# 工具在仓库根目录留下的运行目录 / 包
+.claude/
+.codex/
+*.skill
