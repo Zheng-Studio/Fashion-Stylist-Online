@@ -1,4 +1,4 @@
-"""自动打标：单品图 → 视觉模型 → 结构化字段（预填前端表单，不落库）。"""
+"""自动打标：单品图 → 大模型（LLM_MODEL，需多模态）→ 结构化字段（预填前端表单，不落库）。"""
 from app.domain import imaging
 from app.domain.tagging import TAG_PROMPT, parse_tag_output
 from app.providers.llm import LLM, image_part
@@ -17,7 +17,7 @@ def auto_tag(raw: bytes, llm: LLM) -> dict:
         raise TagError(str(e)) from e
     messages = [{"role": "user", "content": [{"type": "text", "text": TAG_PROMPT}, image_part(jpeg)]}]
 
-    content = llm.chat(messages, vision=True, temperature=0.2)
+    content = llm.chat(messages, temperature=0.2)
     try:
         return parse_tag_output(content)
     except ValueError as first_err:
@@ -28,7 +28,7 @@ def auto_tag(raw: bytes, llm: LLM) -> dict:
                 "请严格按字段要求重新输出，只输出一个 JSON 对象，不要任何其他文字。"
             )},
         ]
-        content = llm.chat(followup, vision=True, temperature=0.2)
+        content = llm.chat(followup, temperature=0.2)
         try:
             return parse_tag_output(content)
         except ValueError as second_err:

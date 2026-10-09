@@ -148,75 +148,6 @@ body {
   margin-top: auto;
 }
 
-/* 左下角当前用户块：名字，点开向上弹菜单 */
-.sidebar-user {
-  position: relative;
-}
-.sidebar-user-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 10px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--ink);
-  font-family: inherit;
-  font-size: 14px;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.sidebar-user-btn:hover,
-.sidebar-user-btn.open {
-  background: var(--tint);
-}
-.sidebar-user-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-/* 菜单向上弹：用户块贴着侧栏底部，往下没有空间 */
-.sidebar-menu {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  z-index: 30;
-  padding: 6px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-focus);
-}
-.sidebar-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 10px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--ink);
-  font-family: inherit;
-  font-size: 14px;
-  text-align: left;
-  cursor: pointer;
-}
-.sidebar-menu-item:hover {
-  background: var(--tint);
-}
-.sidebar-exit {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  justify-content: center;
-}
-
 /* 顶栏 + Tab —— 桌面走侧栏，故默认隐藏；移动端在文末媒体查询里恢复 display:flex */
 .topbar {
   display: none;
@@ -236,7 +167,7 @@ body {
   font-weight: 600; /* DESIGN：最大权重 600，不用 700 */
   letter-spacing: -0.3px;
 }
-/* 品牌图标（衣架），顶栏标题左侧；前门/成员顶栏共用 */
+/* 品牌图标（衣架），顶栏标题左侧 */
 .brand-mark {
   width: 24px;
   height: 24px;
@@ -271,225 +202,6 @@ body {
 .tabbar {
   display: none;
 }
-/* 顶栏当前模特区（v0.9 成员空间）：当前人名 + 切换，桌面靠右 */
-.topbar-person {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.topbar-exit {
-  padding: 6px 12px;
-  font-size: 14px;
-}
-/* 切换用户：圆形图标按钮（⇄），紧跟当前模特名 */
-.topbar-switch {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: none;
-  border-radius: 0;
-  outline: none;
-  background: transparent;
-  color: var(--ink);
-  cursor: pointer;
-  box-shadow: none;
-}
-.topbar-switch:focus-visible {
-  outline: none;
-  box-shadow: none;
-}
-.topbar-exit {
-  margin-left: auto; /* 管理顶栏：退出按钮靠右 */
-}
-
-/* 前门：谁在用？（v0.9 落地选人页，共用电脑每次启动落在这里） */
-.gate {
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  /* 前门没有侧栏：占满 .app 栅格的两栏，别被塞进 200px 的导航列 */
-  grid-column: 1 / -1;
-}
-/* 顶栏铺满前门宽度。v0.15 前 .app 是 max-width+居中，这里要靠 100vw + 位移突破父容器；
-   现在 .app 已铺满视口，直接 100% 即可——继续用 100vw 反而会横向溢出
-   （100vw 含滚动条槽宽，而 html 开了 scrollbar-gutter:stable 会常驻留槽）。 */
-.gate-bar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
-  width: 100%;
-  flex-shrink: 0; /* 顶栏永不被主体挤压/挤出屏幕 */
-}
-.gate-bar-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 24px;
-}
-.gate-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
-  color: var(--ink);
-}
-.gate-settings-btn {
-  border: none;
-  background: none;
-  color: var(--muted);
-  cursor: pointer;
-  padding: 6px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.15s, background 0.15s;
-}
-.gate-settings-btn:hover {
-  color: var(--ink);
-  background: var(--tint);
-}
-/* 主体：标题 + 人物卡片，居中 */
-/* 主体：放得下时居中、放不下时从顶部起可滚动。
-   不用 justify-content:center（不可滚动容器里内容超高会把顶栏/标题挤出可视区，
-   且 center+overflow 有"滚不到顶"老坑）——改用首/尾子项 margin:auto 自动居中，
-   空间不足时 auto 归零、内容贴顶且能滚到底。 */
-.gate-body {
-  flex: 1;
-  min-height: 0; /* flex 子项默认 min-height:auto 会拒绝收缩、挡掉滚动 */
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 32px;
-  padding: 24px 20px calc(40px + env(safe-area-inset-bottom));
-}
-.gate-body > :first-child {
-  margin-top: 20vh; /* 适中偏上 */
-}
-.gate-body > :last-child {
-  margin-bottom: auto;
-}
-.gate-title {
-  font-size: 36px;
-  font-weight: 600;
-  letter-spacing: -0.9px;
-}
-.gate-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 40px;
-  justify-content: center;
-  padding: 0 24px;
-}
-.gate-card {
-  width: 138px; /* 桌面端 +15% */
-  background: none;
-  border: none;
-  border-radius: 0;
-  padding: 0;
-  cursor: pointer;
-  overflow: visible;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  font-family: inherit;
-  text-align: center;
-  transition: transform 0.15s;
-}
-.gate-card:hover {
-  transform: scale(1.08);
-}
-.gate-card-img {
-  aspect-ratio: 1 / 1;
-  border-radius: 50%;
-  overflow: hidden;
-  background: var(--tint);
-}
-.gate-card-img img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.gate-card-noimg {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 48px;
-  font-weight: 600;
-  color: var(--line-strong);
-}
-.gate-card-name {
-  font-size: 16px;
-  font-weight: 600;
-  text-align: center;
-  color: var(--ink);
-}
-/* 管理入口（v0.9 → 改为右上角小齿轮，不再用卡片） */
-
-/* 管理区「设置」tab：分块 + 选款模型 + 来源切换（来源暂为预留口子） */
-.settings-tab {
-  max-width: 560px;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}
-.settings-sec-h {
-  margin: 0 0 4px;
-  font-size: 15px;
-  font-weight: 600;
-}
-.settings-hint {
-  margin: 0 0 12px;
-  color: var(--muted);
-  font-size: 13px;
-}
-/* 设置页里的模型选择器竖排撑满 */
-.settings-tab .model-picker {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-}
-.settings-tab .model-picker select {
-  max-width: none;
-  width: 100%;
-}
-/* 设置页告警文案（默认模型缺失 / 列表加载失败） */
-.settings-warn {
-  margin: 10px 0 0;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--danger);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--ink-83);
-  font-size: 13px;
-  line-height: 1.6;
-}
-.settings-warn code {
-  font-size: 12px;
-  background: var(--tint);
-  padding: 1px 5px;
-  border-radius: 4px;
-}
-
-/* 「待接入」小标 */
-.settings-soon {
-  margin-left: 6px;
-  font-size: 11px;
-  color: var(--muted);
-}
 
 .content {
   padding: 20px;
@@ -510,29 +222,6 @@ body {
   flex-direction: column;
   /* 桌面无顶栏（导航在左侧栏），只需扣掉 .content 的上下 padding 各 20px */
   height: calc(100dvh - 40px);
-}
-.model-picker {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-}
-.model-picker-label {
-  color: var(--muted);
-}
-.model-picker select {
-  padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 14px;
-  font-family: inherit;
-  max-width: 240px;
-}
-.model-picker-err {
-  font-size: 13px;
-  color: var(--danger);
 }
 
 .outfit-block {
@@ -599,13 +288,7 @@ body {
   padding: 6px 0;
 }
 /* 底图 ↔ 上身效果 并排对比 */
-.gen-compare {
-  margin-top: 6px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: flex-start;
-}
+
 .gen-fig {
   margin: 0;
   flex: 0 1 auto;
@@ -714,13 +397,6 @@ body {
   }
 }
 
-.owner-tag {
-  font-size: 12px;
-  padding: 2px 10px;
-  border-radius: var(--pill);
-  background: var(--tint);
-  color: var(--muted);
-}
 .chat-log {
   flex: 1;
   overflow-y: auto;
@@ -856,228 +532,14 @@ button:active {
   background: var(--tint);
   color: var(--muted);
 }
-.tag.family {
-  background: var(--line);
-  color: var(--ink);
-}
-/* 模特页：大图卡网格 + 拖拽排序 */
-.persons-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.persons-hint {
-  font-size: 13px;
-  color: var(--muted);
-}
-.persons-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
-}
-.person-card {
-  position: relative;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  overflow: hidden;
-  transition: box-shadow 0.15s, transform 0.12s, opacity 0.12s;
-}
-.person-card.dragging {
-  opacity: 0.85;
-  transform: scale(1.03);
-  box-shadow: var(--shadow-focus);
-  z-index: 3;
-}
-/* 拖拽手柄：左上 pill，仅它响应拖拽（touch-action:none 防触屏滚动冲突） */
-.person-card-handle {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 2;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: var(--pill);
-  background: var(--surface);
-  color: var(--muted);
-  box-shadow: var(--shadow-inset);
-  font-size: 15px;
-  line-height: 1;
-  cursor: grab;
-  touch-action: none;
-}
-.person-card-handle:active {
-  cursor: grabbing;
-}
-.person-card-click {
-  cursor: pointer;
-}
-.person-card-img {
-  aspect-ratio: 3 / 4;
-  background: var(--tint);
-}
-.person-card-img img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain; /* 整图不裁切 */
-  display: block;
-}
-.person-card-noimg {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 40px;
-  font-weight: 600;
-  color: var(--line-strong);
-}
-.person-card-body {
-  padding: 10px 12px 12px;
-}
-.person-card-name {
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-.person-card-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.person-card-meta .chip {
-  padding: 2px 10px;
-  font-size: 12px;
-}
-.person-card-count {
-  font-size: 13px;
-  color: var(--muted);
-}
-/* 管理弹窗内的照片管理：按宽度自适应列数；单图放大些（min 200），照片更醒目 */
-.model-imgs {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-}
-/* 删除模特：危险动作靠左 */
+
+/* 危险动作（如删除）靠左 */
 .modal-foot .btn-ghost.danger {
   margin-right: auto;
   color: var(--danger);
   border-color: var(--danger);
 }
-.model-img-wrap {
-  position: relative;
-}
-.model-imgs img {
-  width: 100%;
-  aspect-ratio: 3 / 4;
-  object-fit: contain; /* 整图显示，不裁切不拉伸 */
-  border-radius: var(--radius);
-  border: 1px solid var(--line);
-  background: var(--tint);
-  display: block;
-}
-.model-img-del {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(28, 28, 28, 0.55);
-  color: #fff;
-  font-size: 13px;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.model-img-wrap:hover .model-img-del {
-  opacity: 1;
-}
-.model-img-add {
-  width: 100%;
-  aspect-ratio: 3 / 4;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px dashed var(--line);
-  border-radius: var(--radius);
-  color: var(--muted);
-  font-size: 14px;
-  cursor: pointer;
-  background: var(--tint);
-}
-.model-img-add.busy {
-  cursor: default;
-  opacity: 0.6;
-}
-/* 默认图徽标（首位）/ 设为默认按钮（其余 hover 浮现），底部居中 */
-.model-img-badge,
-.model-img-setdefault {
-  position: absolute;
-  bottom: 6px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  white-space: nowrap;
-}
-.model-img-badge {
-  background: var(--text, #1c1c1c);
-  color: #fff;
-}
-.model-img-setdefault {
-  border: none;
-  background: rgba(28, 28, 28, 0.55);
-  color: #fff;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.model-img-wrap:hover .model-img-setdefault {
-  opacity: 1;
-}
-@media (hover: none) {
-  .model-img-setdefault {
-    opacity: 1;
-  }
-}
-/* 触屏没有 hover：删除按钮常驻 */
-@media (hover: none) {
-  .model-img-del {
-    opacity: 1;
-  }
-}
-/* AI 编辑模特图：左上 hover 浮现的胶囊按钮 */
-.model-img-edit {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  border: none;
-  background: rgba(28, 28, 28, 0.55);
-  color: #fff;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.model-img-wrap:hover .model-img-edit {
-  opacity: 1;
-}
-@media (hover: none) {
-  .model-img-edit {
-    opacity: 1;
-  }
-}
+
 /* AI 编辑弹窗：原图 ↔ 结果 并排预览 */
 .model-edit-compare {
   display: flex;
@@ -1116,7 +578,6 @@ button:active {
   padding: 20px;
 }
 
-/* 内联推理过程：展开在气泡下方 */
 /* 推理过程 popover：复用 .modal 外壳，限宽 + body 在弹窗内滚动 */
 .inspector-modal {
   max-width: 720px;
@@ -1161,25 +622,7 @@ button:active {
   white-space: pre-wrap;
   word-break: break-word;
 }
-/* 换装步骤：前后对比图（「提示词」弹窗内，调试用） */
-.step-compare {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 6px;
-}
-.step-compare img,
-.step-noimg {
-  width: 80px;
-  flex-shrink: 0;
-  aspect-ratio: 3 / 4;
-  object-fit: contain;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--line);
-  background: var(--tint);
-}
-.step-noimg {
-  display: block;
-}
+
 /* 换装提示词弹窗限高（比 inspector-modal 短） */
 .promo-modal {
   max-height: 70vh;
@@ -1266,66 +709,6 @@ button:active {
 .cat-filter .chip {
   flex: 0 0 auto; /* 不被压扁：宁可横向滚动，也不挤成窄条 */
   white-space: nowrap;
-}
-
-/* 多选下拉过滤组件 */
-.filter-dd {
-  position: relative;
-}
-.filter-dd-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 14px;
-  font-family: inherit;
-  cursor: pointer;
-}
-.filter-dd-trigger.active {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.filter-dd-trigger .caret {
-  color: var(--muted);
-  font-size: 11px;
-}
-.filter-dd-panel {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  z-index: 30;
-  min-width: 160px;
-  max-height: 320px;
-  overflow: auto;
-  padding: 6px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-focus); /* 原写 var(--shadow)，该变量从未定义 → 一直没有阴影 */
-}
-.filter-dd-opt {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 8px;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  cursor: pointer;
-}
-.filter-dd-opt:hover {
-  background: var(--tint);
-}
-.filter-dd-opt input {
-  accent-color: var(--accent);
-}
-.filter-dd-sep {
-  height: 1px;
-  background: var(--line);
-  margin: 4px 0;
 }
 
 /* v0.4：视图切换 + 排序工具组 */
@@ -1459,7 +842,6 @@ button:active {
   cursor: pointer;
 }
 
-/* 灯箱：点图放大 */
 /* v0.14 单品全屏详情页（Portal 到 body）：跟随 --app-h/--app-top 铺满可视区 */
 /* PC：居中 modal（宽 50%）；移动端 @media 回落全屏（见文末） */
 .item-detail-backdrop {
@@ -1674,19 +1056,6 @@ button:active {
 .modal.modal-narrow {
   max-width: 360px;
 }
-/* 宽版弹窗：半屏宽 + 55% 屏高（编辑模特等图片较多的场景，body 超出则内部滚动） */
-.modal.modal-half {
-  max-width: 50vw;
-  height: 55vh;
-}
-.rename-input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  font-size: 16px;
-  font-family: inherit;
-}
 .modal-head {
   display: flex;
   align-items: center;
@@ -1718,72 +1087,11 @@ button:active {
   border-top: 1px solid var(--line);
 }
 
-/* 管理区 PIN 弹窗（v0.9）：窄弹窗复用 .modal.modal-narrow */
 /* 应用内二次确认的正文 */
 .confirm-text {
   margin: 0;
   color: var(--ink-83);
   line-height: 1.6;
-}
-
-.pin-hint {
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.5;
-  margin-bottom: 12px;
-}
-.pin-digits {
-  position: relative;
-  margin-bottom: 10px;
-}
-.pin-digits .pin-input {
-  /* 透明覆盖在 dots 上方，捕捉键盘输入 */
-  position: absolute;
-  inset: 0;
-  opacity: 0.01;
-  width: 100%;
-  border: none;
-  background: transparent;
-  color: transparent;
-  caret-color: transparent;
-  font-size: 16px;
-}
-.pin-dots {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-}
-.pin-dot {
-  width: 48px;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  font-size: 16px;
-  color: var(--ink);
-}
-.pin-dot.filled {
-  border-color: var(--ink);
-}
-.pin-dot.cursor {
-  border-color: var(--ink);
-  box-shadow: 0 0 0 1px var(--ink);
-}
-.pin-input-confirm {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--ink);
-  font-family: inherit;
-  font-size: 20px;
-  letter-spacing: 6px;
-  text-align: center;
-  margin-bottom: 10px;
 }
 
 /* 表单字段 */
@@ -1926,17 +1234,6 @@ button:active {
   opacity: 0.6;
   cursor: default;
 }
-.file-btn {
-  display: inline-block;
-  margin-top: 8px;
-  padding: 8px 14px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  cursor: pointer;
-  background: transparent;
-  color: var(--ink);
-}
 
 /* 标签多选 chips */
 .chips {
@@ -1971,7 +1268,7 @@ button:active {
   font-size: 14px;
 }
 
-/* ===================== v0.9 成员自我编辑 ===================== */
+/* ===================== 我：本人资料 + 照片 ===================== */
 .my-profile {
   max-width: 480px;
   margin: 0 auto;
@@ -2290,13 +1587,13 @@ button:active {
     min-height: 0; /* 覆盖基础 min-height:100vh，否则会撑高于可视区 */
     overflow: hidden;
   }
-  /* 移动端不用侧栏，导航回到顶栏 tab（管理区）/ 底部 tabbar（成员区） */
+  /* 移动端不用侧栏，导航改走底部 tabbar */
   .sidebar {
     display: none;
   }
   .topbar {
     display: flex; /* 桌面默认 none，这里恢复 */
-    position: relative; /* 当前模特绝对定位到右上角的锚点 */
+    position: relative;
     align-items: center;
     gap: 8px;
     flex-shrink: 0;
@@ -2305,22 +1602,13 @@ button:active {
   .brand {
     display: none;
   }
-  /* tab 居中占满整行（当前模特已绝对定位移出 flow，不再偏心） */
+  /* tab 居中占满整行 */
   .tabs {
     flex: 1;
     justify-content: center;
   }
-  /* 当前模特 + 切换符号：钉到右上角 */
-  .topbar-person {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    margin: 0;
-    gap: 4px;
-  }
-  /* 成员空间：tab 下沉到底部 tabbar → 顶栏改回品牌(左) + 当前人(右)。
-     管理空间不变（tab 仍在顶部居中，品牌仍隐藏）。 */
+
+  /* 移动端：tab 下沉到底部 tabbar，顶栏只留品牌 */
   .topbar-member .tabs {
     display: none;
   }
@@ -2363,8 +1651,7 @@ button:active {
   html.kb-open .tabbar {
     display: none;
   }
-  /* 成员空间底部安全区由 tabbar 兜底，content 不再叠加 env(safe-area)——
-     否则双倍留白、聊天输入悬空。管理空间(无 tabbar)的 .content 不受影响。
+  /* 底部安全区由 tabbar 兜底，content 不再叠加 env(safe-area)——否则双倍留白、聊天输入悬空。
      键盘弹起时仍走上面的 html.kb-open .content{padding-bottom:0}（特异性更高）。 */
   .topbar-member + .content {
     padding-bottom: 16px;
@@ -2375,36 +1662,7 @@ button:active {
   .content.content-chat {
     padding-top: 0;
   }
-  /* 前门在手机上填满可视区 */
-  .gate {
-    min-height: 0;
-    flex: 1;
-  }
-  .gate-bar-inner {
-    padding: 12px 16px;
-  }
-  .gate-brand {
-    font-size: 16px;
-  }
-  .gate-title {
-    font-size: 28px;
-  }
-  .gate-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 28px 12px; /* 行间距 28px，列间距 12px */
-    padding: 0 16px;
-  }
-  .gate-card {
-    width: calc((100% - 24px) / 3); /* 3 张/行，末行不满居中 */
-  }
-  .gate-body > :first-child {
-    margin-top: 10vh;
-  }
-  .gate-body > :last-child {
-    margin-bottom: auto;
-  }
+
   .content {
     flex: 1;
     min-height: 0;
@@ -2429,7 +1687,7 @@ button:active {
     height: 100%;
   }
 
-  /* 网格：手机两列（搭配/模特等通用） */
+  /* 网格：手机两列 */
   .grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
@@ -2457,11 +1715,6 @@ button:active {
   /* 手机上气泡占满宽 */
   .bubble {
     max-width: 90%;
-  }
-
-  /* 模特图在手机上自适应两列 */
-  .model-imgs img {
-    width: calc(50% - 6px);
   }
 
   /* 工具行：排序下拉吃掉左侧余量，卡片/列表切换贴右 */
@@ -2537,11 +1790,6 @@ button:active {
     max-height: none;
     border: none;
     border-radius: 0;
-  }
-  /* 宽版弹窗在手机上回落全屏（覆盖 50vw / 55vh） */
-  .modal.modal-half {
-    max-width: 100%;
-    height: 100%;
   }
   /* modal 底部按钮放大、留底部安全区，便于单手点按 */
   .modal-foot {

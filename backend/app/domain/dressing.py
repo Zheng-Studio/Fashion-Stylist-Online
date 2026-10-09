@@ -26,28 +26,7 @@ def garment_name(item: dict) -> str:
     return (item.get("name") or "").strip() or f"这件{item.get('category') or '服饰'}"
 
 
-# 品类 → (换装动作, 该单品占据区域以外要「保持不变」的部位)。
-# 「保持不变」= 全身 − 占据区域：外套占外层 → 保留里面的内搭；整身占上下 → 只保留鞋和头。
-# 整身不写「裙」：款式由 garment_name 带出，避免把连体裤画成裙子。
-_DRESS_RULES: dict[str, tuple[str, str]] = {
-    "内搭": ("把图1人物的上衣换成图2的{garment}", "下半身的裤装、鞋子和头部"),
-    "外套": ("给图1人物在现有衣服外面套上图2的{garment}", "里面已穿的衣服、下半身、鞋子和头部"),
-    "下装": ("把图1人物的下半身换成图2的{garment}", "上身的衣着、鞋子和头部"),
-    "整身": ("把图1人物原本的上衣和下装整体换成图2的{garment}", "鞋子和头部"),
-    "鞋": ("把图1人物脚上的鞋换成图2的{garment}", "上身衣着、下半身和头部"),
-    "帽": ("给图1人物戴上图2的{garment}", "身上的衣着和鞋子"),
-    "配饰": ("给图1人物配上图2的{garment}", "原有的衣着、鞋子和发型"),
-}
-_DRESS_FALLBACK = ("把图1人物换上图2的{garment}", "脸、身材以外尽量不变")
-
-
-def serial_prompt(item: dict) -> str:
-    """serial 模式单步提示词：图1 = 当前人物，图2 = 这一件。"""
-    action_tpl, keep = _DRESS_RULES.get(item.get("category") or "", _DRESS_FALLBACK)
-    return f"{action_tpl.format(garment=garment_name(item))}。{keep}保持不变。"
-
-
-# single 模式：每件单品在整句里的动作短语（图号由调用方按顺序分配）
+# 每件单品在整句里的动作短语（图号由调用方按顺序分配）
 _WEAR_VERB: dict[str, str] = {
     "内搭": "上身穿{ref}的{garment}",
     "外套": "在最外层套上{ref}的{garment}",
@@ -60,7 +39,7 @@ _WEAR_VERB: dict[str, str] = {
 
 
 def single_prompt(ordered_items: list[dict]) -> str:
-    """single 模式提示词：图1 = 人物，图2..图N+1 = 按 ordered_items 顺序的单品。"""
+    """换装提示词：图1 = 人物，图2..图N+1 = 按 ordered_items 顺序的单品。"""
     parts = []
     for i, it in enumerate(ordered_items):
         verb = _WEAR_VERB.get(it.get("category") or "", "穿上{ref}的{garment}")

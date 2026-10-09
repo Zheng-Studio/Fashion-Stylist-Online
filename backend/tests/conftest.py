@@ -14,7 +14,6 @@ os.environ["DATABASE_URL"] = f"sqlite:///{(_TMP / 'test.db').as_posix()}"
 os.environ["STORAGE_DIR"] = str(_TMP / "files")
 os.environ["AUTH_MODE"] = "dev"
 os.environ["BILLING_MODE"] = "ledger"
-os.environ["TRYON_MODE"] = "single"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -42,8 +41,8 @@ class FakeLLM:
         self.replies: list = []
         self.calls: list = []
 
-    def chat(self, messages, *, schema=None, schema_name="output", temperature=0.3, vision=False):
-        self.calls.append({"messages": messages, "schema": schema, "vision": vision})
+    def chat(self, messages, *, schema=None, schema_name="output", temperature=0.3):
+        self.calls.append({"messages": messages, "schema": schema})
         reply = self.replies.pop(0) if self.replies else "{}"
         return reply(messages) if callable(reply) else reply
 

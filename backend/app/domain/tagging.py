@@ -9,7 +9,6 @@ import re
 from app.domain import taxonomy
 
 SEASONS = {"春", "夏", "秋", "冬"}
-GENDERS = {"female", "male", "unisex"}
 GENDER_ALIASES = {
     "female": "female", "women": "female", "woman": "female", "girl": "female",
     "feminine": "female", "womens": "female", "ladies": "female",

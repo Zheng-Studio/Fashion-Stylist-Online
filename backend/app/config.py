@@ -15,8 +15,7 @@ class Settings(BaseSettings):
     # 大模型（OpenAI 兼容）
     llm_base_url: str = ""
     llm_api_key: str = ""
-    llm_model: str = ""
-    llm_vision_model: str = ""  # 空 = 用 llm_model
+    llm_model: str = ""  # 选款和自动打标共用，须支持看图（多模态）
     llm_json_mode: str = "json_object"  # json_schema / json_object / none
     llm_timeout: float = 120
 
@@ -26,7 +25,6 @@ class Settings(BaseSettings):
     image_model: str = ""
     image_size: str = ""  # 空 = 不传，由接口默认
     image_timeout: float = 300
-    tryon_mode: str = "single"
 
     # 文件存储（本地实现；以后换对象存储只换 storage 实现）
     storage_dir: Path = BACKEND_DIR / "data" / "files"

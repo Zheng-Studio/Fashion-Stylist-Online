@@ -1,7 +1,7 @@
 """大模型：OpenAI 兼容协议的 chat/completions。
 
 国内主流厂商和 Ollama 都提供 OpenAI 兼容接口，所以只写这一个实现，换供应商只改
-LLM_BASE_URL / LLM_API_KEY / LLM_MODEL。
+LLM_BASE_URL / LLM_API_KEY / LLM_MODEL。选款和自动打标共用 LLM_MODEL，所以它必须是多模态模型。
 
 结构化输出各家支持程度不一，由 LLM_JSON_MODE 决定怎么要 JSON：
   json_schema —— response_format 带完整 schema（最严格，支持的供应商最少）
@@ -27,7 +27,6 @@ class LLM(Protocol):
         schema: dict | None = None,
         schema_name: str = "output",
         temperature: float = 0.3,
-        vision: bool = False,
     ) -> str:
         """发一轮对话，返回模型输出的原始文本。schema 非空表示要 JSON。"""
         ...
@@ -43,7 +42,6 @@ class OpenAICompatLLM:
     def __init__(self, settings: Settings):
         self.settings = settings
         self.model = settings.llm_model
-        self.vision_model = settings.llm_vision_model or settings.llm_model
         self._client: openai.OpenAI | None = None
 
     def _get_client(self) -> openai.OpenAI:
@@ -56,13 +54,12 @@ class OpenAICompatLLM:
             )
         return self._client
 
-    def chat(self, messages, *, schema=None, schema_name="output", temperature=0.3, vision=False) -> str:
+    def chat(self, messages, *, schema=None, schema_name="output", temperature=0.3) -> str:
         client = self._get_client()
-        model = self.vision_model if vision else self.model
-        kwargs: dict = {"model": model, "messages": messages, "temperature": temperature}
+        kwargs: dict = {"model": self.model, "messages": messages, "temperature": temperature}
         mode = self.settings.llm_json_mode
-        # 视觉请求普遍不支持结构化约束，只对纯文本请求加 response_format
-        if schema is not None and not vision:
+        # 带图的请求（自动打标）不传 schema，结构靠 prompt 约定 + 解析失败重问
+        if schema is not None:
             if mode == "json_schema":
                 kwargs["response_format"] = {
                     "type": "json_schema",
