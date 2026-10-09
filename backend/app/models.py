@@ -28,8 +28,6 @@ class User(Base):
     # 平台侧用户标识（Lucimix 传来的用户 id）；dev 模式下就是请求带的 token
     external_id: Mapped[str] = mapped_column(String(128), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(64), default="")
-    gender: Mapped[str] = mapped_column(String(16), default="")  # female / male / unisex
-    avatar: Mapped[str | None] = mapped_column(String(255))
     gen_base: Mapped[str | None] = mapped_column(String(255))  # 生图底图；空则回落 photos[0]
     photos: Mapped[list] = mapped_column(JSON, default=list)  # 本人照片 key 列表
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=now)

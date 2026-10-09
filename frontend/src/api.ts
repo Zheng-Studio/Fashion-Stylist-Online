@@ -50,7 +50,7 @@ export async function fetchMe(): Promise<Me> {
 }
 
 export async function updateMe(
-  patch: { name?: string; gender?: string; avatar?: string; gen_base?: string; photos?: string[] },
+  patch: { name?: string; gen_base?: string; photos?: string[] },
 ): Promise<Me> {
   return (await request("/api/me", { method: "PUT", ...json(patch) }, "保存失败")).json();
 }
@@ -61,10 +61,6 @@ export async function uploadMyPhoto(file: Blob): Promise<Me> {
 
 export async function deleteMyPhoto(path: string): Promise<Me> {
   return (await request("/api/me/photos", { method: "DELETE", ...json({ path }) }, "删除照片失败")).json();
-}
-
-export async function uploadAvatar(file: Blob): Promise<Me> {
-  return (await request("/api/me/avatar", { method: "POST", body: fileForm("file", file) }, "上传头像失败")).json();
 }
 
 // ---------------------------------------------------------------------------

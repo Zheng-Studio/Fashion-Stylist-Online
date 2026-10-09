@@ -19,7 +19,6 @@ from app.config import get_settings
 class Identity:
     external_id: str
     name: str | None = None
-    avatar_url: str | None = None
 
 
 class AuthProvider(Protocol):
@@ -43,7 +42,7 @@ class DevAuth:
 
 
 class LucimixAuth:
-    """TODO：Lucimix 登录接口规格确定后实现——用 token 调平台接口换用户 id / 昵称 / 头像。"""
+    """TODO：Lucimix 登录接口规格确定后实现——用 token 调平台接口换用户 id / 昵称。"""
 
     def authenticate(self, request: Request) -> Identity:
         if not bearer_token(request):

@@ -7,7 +7,7 @@ export const CATEGORIES = ["内搭", "外套", "下装", "整身", "鞋", "帽",
 
 export const SEASONS = ["春", "夏", "秋", "冬"] as const;
 
-// 性别：单品=适用性别，用户=本人性别。须与后端 domain/tagging.GENDERS 一致。
+// 单品适用性别。须与后端 domain/tagging.GENDERS 一致。
 export const GENDERS = ["female", "male", "unisex"] as const;
 export const GENDER_LABEL: Record<string, string> = {
   female: "女",

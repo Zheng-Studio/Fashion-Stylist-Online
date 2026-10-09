@@ -28,7 +28,7 @@ SAMPLE_DIR = BACKEND_DIR / "sample"
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--user", default="dev", help="平台用户标识（dev 模式下即请求带的 token）")
-    ap.add_argument("--gender", choices=["female", "male"], default="female")
+    ap.add_argument("--gender", choices=["female", "male"], default="female", help="挑哪个性别的样例单品和示例照片")
     ap.add_argument("--force", action="store_true", help="已有单品也追加")
     args = ap.parse_args()
 
@@ -37,7 +37,7 @@ def main() -> None:
     with SessionLocal() as db:
         user = db.scalar(select(User).where(User.external_id == args.user))
         if user is None:
-            user = User(external_id=args.user, name=args.user, gender=args.gender, photos=[])
+            user = User(external_id=args.user, name=args.user, photos=[])
             db.add(user)
             db.flush()
         if db.scalar(select(func.count()).select_from(Item).where(Item.user_id == user.id)) and not args.force:
@@ -48,7 +48,6 @@ def main() -> None:
             key = new_key(user.id, "photos")
             storage.put(key, (SAMPLE_DIR / "photos" / f"sample_{args.gender}.jpg").read_bytes())
             user.photos = [key]
-            user.gender = user.gender or args.gender
 
         n = 0
         for s in samples:

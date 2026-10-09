@@ -210,12 +210,11 @@ def build_prompt(
     items: list[dict],
     handles: list[str],
     wearer_name: str | None = None,
-    wearer_gender: str | None = None,
     history: list[dict] | None = None,
 ) -> dict:
     """返回 {system, user}，两段都会透传给前端预览。handles 与 items 一一对应。
 
-    可注入穿搭对象（用户名/性别），辅助 LLM 理解；
+    可注入穿搭对象（用户名），辅助 LLM 理解；
     可注入对话历史（history），支持"把刚才的裤子换成裙子"这类连续调整。
     """
     context_parts = []
@@ -224,8 +223,7 @@ def build_prompt(
         context_parts.append(f"【对话历史（供理解「刚才/上一套」等指代，勿照搬旧编号）】\n{hist_text}")
     context_parts.append(f"用户需求：{user_need}")
     if wearer_name:
-        gender_hint = {"female": "女", "male": "男", "unisex": "中性"}.get(wearer_gender or "", "")
-        context_parts.append(f"穿搭对象：{wearer_name}{'（' + gender_hint + '）' if gender_hint else ''}")
+        context_parts.append(f"穿搭对象：{wearer_name}")
     context_parts.append(
         f"候选单品清单（共 {len(items)} 件，行首是单品编号）：\n"
         f"{format_items(items, handles)}\n"

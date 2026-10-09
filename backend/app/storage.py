@@ -23,7 +23,7 @@ class Storage(Protocol):
 
 
 def new_key(user_id: str, kind: str, ext: str = "jpg") -> str:
-    """kind: items / photos / avatars / generations"""
+    """kind: items / photos / generations"""
     return f"u/{user_id}/{kind}/{uuid.uuid4().hex}.{ext}"
 
 

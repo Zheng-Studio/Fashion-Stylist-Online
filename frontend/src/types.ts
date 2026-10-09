@@ -48,8 +48,6 @@ export interface TagResult {
 export interface Me {
   id: string;
   name: string;
-  gender: string;
-  avatar: string | null;
   gen_base: string | null; // 生图底图（已回落到第一张照片）
   photos: string[];
 }

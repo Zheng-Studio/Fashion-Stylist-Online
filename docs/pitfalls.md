@@ -28,6 +28,12 @@
 - **现在的处理**：`app/db.py` 在引擎的 `connect` 事件里统一打开，所有连接（含 alembic）都走 `make_engine()`。Postgres 没这个问题。外键一律 `ON DELETE CASCADE`：删单品 = 搭配里少掉那一件，搭配本身作为历史保留。
 - **教训**：**声明了外键 ≠ 外键生效**，要用真实的 DELETE 去验（`tests/test_recommend_generate.py::test_deleting_item_keeps_outfit`）。
 
+### 3d. SQLite batch 迁移改父表会级联删光子表
+- **现象**：删 `user.avatar` / `user.gender` 的迁移跑完，`user` 行还在，但 `item` 从 16 条变成 0 条，搭配也一起没了。
+- **原因**：SQLite 不支持 DROP COLUMN 时，Alembic 的 `batch_alter_table` 用「建新表 → 拷数据 → DROP 旧表 → 改名」来改表。迁移连接也走 `make_engine()`，外键是开着的（见 3b），所以 DROP 旧的 `user` 表会触发子表的 `ON DELETE CASCADE`。改子表（比如删 `item.is_in_wishlist`）没事，**改被引用的父表才会出事**。
+- **现在的处理**：`migrations/env.py` 在 SQLite 上跑迁移前先 `PRAGMA foreign_keys = OFF`（这条在事务里不生效，要放在 `begin_transaction` 之前），跑完用 `PRAGMA foreign_key_check` 检查一遍再打开。回归测试是 `tests/test_migrations.py`。
+- **教训**：迁移前先备份 `data/app.db`；跑完对比各表行数，不要只看表结构。
+
 ### 3. uvicorn `--reload` 在 Windows 上重启一次后彻底卡死
 - **现象**：改第一次 `.py` 会重载，之后再怎么改都没有 "Reloading" 日志，reloader 静默卡住；旧子进程还活着、继续占着端口（→ #5b）。
 - **实测结论**（uvicorn 0.53.0 + watchfiles 1.3.0）：**不是 watchfiles 的问题**。直接调 `watchfiles.watch()` 时 added / modified / deleted 全部正常收到，编辑器的原子写入（tmp + rename）也收得到。卡住的是 uvicorn 自己的 `BaseReload.restart()`：

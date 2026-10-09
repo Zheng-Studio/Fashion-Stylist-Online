@@ -1,7 +1,7 @@
 import { GENDER_LABEL, GENDERS } from "../constants";
 
-// 性别选择 chips（单品表单与「我」共用）。
-// 再点已选中项即取消（value 回到空串）——四处原本就是这个行为。
+// 单品适用性别选择 chips。
+// 再点已选中项即取消（value 回到空串）。
 export default function GenderChips({
   value,
   onChange,

@@ -36,8 +36,6 @@ def user_out(user: User) -> dict:
     return {
         "id": user.id,
         "name": user.name or "",
-        "gender": user.gender or "",
-        "avatar": user.avatar,
         "gen_base": user_gen_base(user),
         "photos": user.photos or [],
     }
