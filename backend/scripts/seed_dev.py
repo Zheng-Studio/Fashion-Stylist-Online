@@ -4,8 +4,8 @@
     .venv/Scripts/python.exe scripts/seed_dev.py                  # 给 dev 用户灌女装示例
     .venv/Scripts/python.exe scripts/seed_dev.py --user bob --gender male
 
-按性别挑样例：该性别 + 中性单品。幂等：该用户已有单品就跳过（--force 追加）。
-只写数据库和存储目录，不碰其它用户。
+按 --gender 挑样例单品（该性别 + 中性）和对应的示例照片；用户本身没有性别字段。
+幂等：该用户已有单品就跳过（--force 追加）。只写数据库和存储目录，不碰其它用户。
 """
 import argparse
 import json

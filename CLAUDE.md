@@ -39,4 +39,4 @@ cd frontend ; npx tsc --noEmit ; npm run lint ; npm test
 ## 环境
 - Windows 11 + PowerShell / git bash；路径含中文时写文件用 UTF-8。
 - Python 依赖只装进 `backend/.venv`，用 `backend/.venv/Scripts/python.exe` 跑。
-- Windows 上 `uvicorn --reload` 经常漏接改动，改完后端手动重启（见 pitfalls #3）。
+- 后端用 `backend/dev.py` 启动（带热重载）；**不要用 `uvicorn --reload`**，它在 Windows 上重载一次后会卡死（见 pitfalls #3）。改 `backend/.env` 不会自动生效，要重启。
