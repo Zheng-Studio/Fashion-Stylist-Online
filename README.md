@@ -1,9 +1,9 @@
 # Fashion Stylist Online
 
-对话式 AI 穿搭助手，作为第三方应用以 iframe 形式嵌入 **Lucimix** 平台。
+对话式 AI 穿搭助手，支持管理个人衣橱、按需求推荐搭配，并生成上身效果图。
 
 用户用一句话说需求（"今天通勤，大地色系，不要裙子"），助手从**用户自己的衣橱**里挑出一套搭配，
-再用用户本人的照片生成上身效果图。每个平台用户只有自己的衣橱和照片，**用户即模特**。
+再用用户本人的照片生成上身效果图。每位用户只有自己的衣橱和照片，**用户即模特**。
 
 ## 功能
 
@@ -70,7 +70,7 @@ cd frontend ; npm run dev                          # 前端 http://localhost:517
 | `IMAGE_SIZE` | 生图输出像素，默认 `1728x2304`（3:4），须是所选模型支持的尺寸 |
 | `DATABASE_URL` | 默认 `backend/data/app.db`（SQLite）；线上填 Postgres |
 | `STORAGE_DIR` | 图片存储目录，默认 `backend/data/files` |
-| `AUTH_MODE` / `BILLING_MODE` | 对接 Lucimix 前用 `dev` / `ledger` |
+| `AUTH_MODE` / `BILLING_MODE` | 本地开发使用 `dev` / `ledger` |
 
 前端构建时可注入：`VITE_API_BASE`（前后端不同源时）、`VITE_FILES_BASE`（图片走对象存储 / CDN 时）。
 
@@ -110,8 +110,8 @@ backend/   FastAPI + SQLAlchemy 2 + Alembic
 
 | 口子 | 现在 | 以后 |
 |---|---|---|
-| `auth.py` | `dev`：token 本身就是用户标识 | `lucimix`：拿 token 调平台换用户信息 |
-| `billing.py` | `ledger`：只写扣费流水 | `lucimix`：记流水 + 调平台扣费 |
+| `auth.py` | `dev`：token 本身就是用户标识 | 接入外部身份服务，校验 token 并获取用户信息 |
+| `billing.py` | `ledger`：只写扣费流水 | 接入外部计费服务，记录流水并完成扣费 |
 | `storage.py` | 本地目录，后端挂在 `/files/` | 对象存储 + CDN |
 | `tasks.py` | 进程内线程池 | Redis 队列 + 独立 worker |
 
@@ -143,5 +143,4 @@ cd backend
 - [docs/roadmap.md](docs/roadmap.md)：进度与待办
 - [docs/pitfalls.md](docs/pitfalls.md)：踩过的坑，遇到环境类的怪问题先翻这里
 - [docs/DESIGN.md](docs/DESIGN.md)：视觉设计参考
-- [docs/lucimix-image-api.md](docs/lucimix-image-api.md)：Lucimix 生图接口接入说明
 - [CLAUDE.md](CLAUDE.md)：代码约定（分层、数据归属、扣费时机等）
