@@ -2,9 +2,11 @@
 setlocal
 cd /d "%~dp0"
 
-rem Fixed ports: frontend\vite.config.ts proxies /api and /files to 127.0.0.1:8000.
-set "BACKEND_PORT=8000"
-set "FRONTEND_PORT=5173"
+rem Ports are picked at startup: we walk up from these values until one is free.
+rem The backend port is handed to frontend\vite.config.ts as VITE_API_PORT, which is
+rem what the dev server proxies /api and /files to, so both sides always agree.
+set "BACKEND_PORT_START=8000"
+set "FRONTEND_PORT_START=5173"
 
 if not exist "backend\.venv\Scripts\python.exe" (
     echo [ERROR] Backend virtual environment not found: backend\.venv
@@ -22,9 +24,10 @@ if not exist "backend\.env" (
     echo [WARN] backend\.env not found. Copy backend\.env.example if needed.
 )
 
-rem Refuse to start on a busy port, so the addresses printed below are the real ones.
-call :check_port %BACKEND_PORT% Backend || goto :fail
-call :check_port %FRONTEND_PORT% Frontend || goto :fail
+call :find_port %BACKEND_PORT_START% BACKEND_PORT || goto :fail
+call :find_port %FRONTEND_PORT_START% FRONTEND_PORT || goto :fail
+if not "%BACKEND_PORT%"=="%BACKEND_PORT_START%" echo [INFO] Backend port %BACKEND_PORT_START% is busy, using %BACKEND_PORT%.
+if not "%FRONTEND_PORT%"=="%FRONTEND_PORT_START%" echo [INFO] Frontend port %FRONTEND_PORT_START% is busy, using %FRONTEND_PORT%.
 
 rem LAN IP = the connected physical adapter that has a default gateway (skips VPN / virtual adapters).
 set "LANIP="
@@ -44,6 +47,8 @@ echo Backend runs in this window with hot reload ON (via dev.py).
 echo Press Ctrl+C here to stop it.
 echo.
 
+rem Read by frontend\vite.config.ts to pick the proxy target; `start` passes the environment on.
+set "VITE_API_PORT=%BACKEND_PORT%"
 start "Fashion Stylist Online Frontend" /D "%~dp0frontend" cmd /k "npm run dev -- --host 0.0.0.0 --port %FRONTEND_PORT% --strictPort"
 cd /d "%~dp0backend"
 set "DEV_HOST=0.0.0.0"
@@ -57,13 +62,18 @@ exit /b 0
 pause
 exit /b 1
 
-rem Usage: call :check_port <port> <label>   - exits 1 if something is already listening.
-:check_port
-set "PORT_PID="
-for /f "usebackq delims=" %%p in (`powershell -NoProfile -Command "@(Get-NetTCPConnection -LocalPort %1 -State Listen -ErrorAction SilentlyContinue)[0].OwningProcess"`) do set "PORT_PID=%%p"
-if not defined PORT_PID exit /b 0
-echo [ERROR] %2 port %1 is already in use by PID %PORT_PID%.
-echo It is probably an earlier instance that is still running.
-echo Close its window, or stop it with:  taskkill /PID %PORT_PID% /F
-echo If taskkill says the process does not exist, see docs\pitfalls.md #5b.
-exit /b 1
+rem Usage: call :find_port <start> <varname>
+rem   Writes the first free port at or after <start> (20 tries) into <varname>;
+rem   exits 1 if all of them are taken.
+rem   Busy = somebody is listening on it. A bind test would not work here: on Windows
+rem   two processes can hold the same port at once (SO_REUSEADDR semantics), which is
+rem   exactly why frontend\vite.config.ts probes with a connect instead.
+:find_port
+set "%~2="
+for /f "usebackq delims=" %%p in (`powershell -NoProfile -Command "$s=%1; for($p=$s; $p -lt $s+20; $p++){ if(-not @(Get-NetTCPConnection -LocalPort $p -State Listen -ErrorAction SilentlyContinue).Count){ $p; break } }"`) do set "%~2=%%p"
+if not defined %~2 (
+    echo [ERROR] No free port: 20 ports starting at %1 are all in use.
+    echo Stop whatever is holding them and try again.
+    exit /b 1
+)
+exit /b 0

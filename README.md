@@ -36,12 +36,12 @@ npm install
 
 ### 日常启动
 
-直接双击仓库根目录的脚本。它们会先检查环境和端口占用，再打印真实的访问地址：
+直接双击仓库根目录的脚本。它们会先检查环境，再挑一个空闲端口（默认 8000 / 5173，被占用就往后找），最后打印真实的访问地址：
 
 | 脚本 | 作用 |
 |---|---|
-| `启动Online.bat` | 前后端一起启动，绑 `0.0.0.0`，同一 Wi-Fi 下的手机也能访问。**一边开发一边看效果用这个** |
-| `start-backend.bat` | 只启动后端（`127.0.0.1:8000`） |
+| `启动Online.bat` | 前后端一起启动，绑 `0.0.0.0`，同一 Wi-Fi 下的手机也能访问。**一边开发一边看效果用这个**。前后端端口各自独立漂移，前端代理跟着后端走 |
+| `start-backend.bat` | 只启动后端（固定 `127.0.0.1:8000`，被占用就直接报错） |
 
 也可以手动启动：
 
@@ -49,6 +49,8 @@ npm install
 cd backend  ; .\.venv\Scripts\python.exe dev.py   # 后端 http://127.0.0.1:8000
 cd frontend ; npm run dev                          # 前端 http://localhost:5173（/api、/files 代理到 8000）
 ```
+
+手动启动时端口是默认值（后端 8000，前端从 5173 起找空闲的）。`启动Online.bat` 挑好端口后会通过 `VITE_API_PORT` 告诉 [frontend/vite.config.ts](frontend/vite.config.ts)，所以它换端口时前端代理会跟着换。
 
 - 前后端都带热重载：改前端代码浏览器立刻更新，改 `backend/app/` 下的代码后端自动重启。改 `backend/.env` 要手动重启后端。
 - 不要用 `uvicorn --reload`，它在 Windows 上重载一次后会卡死（见 [pitfalls](docs/pitfalls.md) #3）。
