@@ -3,6 +3,7 @@ import { MessageCircle, Shirt, UserRound } from "lucide-react";
 import Chat from "./components/Chat";
 import Wardrobe from "./components/Wardrobe";
 import MyProfile from "./components/MyProfile";
+import Onboarding from "./components/Onboarding";
 import Sidebar, { type SidebarItem } from "./components/Sidebar";
 import { fetchMe } from "./api";
 import type { Me } from "./types";
@@ -41,12 +42,14 @@ export default function App() {
   const [tab, setTab] = useState<Tab>(readTab);
   const [me, setMe] = useState<Me | null>(null);
   const [meErr, setMeErr] = useState("");
+  const [onboardingVisible, setOnboardingVisible] = useState<boolean | null>(null);
 
   const reloadMe = () =>
     fetchMe()
       .then((m) => {
         setMe(m);
         setMeErr("");
+        setOnboardingVisible((current) => current ?? !m.onboarding_completed);
       })
       .catch((e) => setMeErr(errMsg(e, "加载用户信息失败")));
   useEffect(() => {
@@ -98,6 +101,11 @@ export default function App() {
       document.removeEventListener("focusout", onFocusOut);
     };
   }, []);
+
+  if (!me) return <div className="app-load">{meErr || "加载中…"}</div>;
+  if (onboardingVisible) {
+    return <Onboarding onCompleted={setMe} onExit={(nextTab) => { setTab(nextTab); setOnboardingVisible(false); }} />;
+  }
 
   return (
     <div className="app">

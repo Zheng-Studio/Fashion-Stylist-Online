@@ -39,5 +39,7 @@ def test_upgrade_keeps_child_rows(tmp_path):
 
     command.upgrade(cfg, "head")
     assert _counts(db) == before
+    with sqlite3.connect(db) as c:
+        assert c.execute("select onboarding_completed from user where id = 'u1'").fetchone()[0] == 1
     command.downgrade(cfg, "82f0c56b2dcc")
     assert _counts(db) == before

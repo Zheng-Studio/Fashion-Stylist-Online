@@ -4,7 +4,7 @@
     .venv/Scripts/python.exe scripts/seed_dev.py                  # 给 dev 用户灌女装示例
     .venv/Scripts/python.exe scripts/seed_dev.py --user bob --gender male
 
-按 --gender 挑样例单品（该性别 + 中性）和对应的示例照片；用户本身没有性别字段。
+按 --gender 挑样例单品（该性别 + 中性）和对应的示例照片；该测试用户直接跳过首次体验。
 幂等：该用户已有单品就跳过（--force 追加）。只写数据库和存储目录，不碰其它用户。
 """
 import argparse
@@ -48,6 +48,8 @@ def main() -> None:
             key = new_key(user.id, "photos")
             storage.put(key, (SAMPLE_DIR / "photos" / f"sample_{args.gender}.jpg").read_bytes())
             user.photos = [key]
+        user.gender = args.gender
+        user.onboarding_completed = True
 
         n = 0
         for s in samples:

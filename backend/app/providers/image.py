@@ -4,6 +4,7 @@
 所以只需要一个 edit() 能力。多图输入时，人物和全部单品一次放进 image 数组。
 """
 import base64
+import time
 from typing import Protocol
 
 import httpx
@@ -69,10 +70,21 @@ def _first_image(resp, timeout: float) -> bytes:
     if first.get("b64_json"):
         return base64.b64decode(first["b64_json"])
     if first.get("url"):
-        try:
-            r = httpx.get(first["url"], timeout=timeout)
-            r.raise_for_status()
-        except httpx.HTTPError as e:
-            raise ProviderError(f"下载生图结果失败：{e}") from e
-        return r.content
+        url = first["url"]
+        last_error: Exception | None = None
+        for attempt in range(3):
+            try:
+                r = httpx.get(url, timeout=timeout, follow_redirects=True)
+                r.raise_for_status()
+                return r.content
+            except httpx.HTTPStatusError as e:
+                last_error = e
+                if e.response.status_code not in (408, 429) and e.response.status_code < 500:
+                    break
+            except httpx.TransportError as e:
+                # Retry transient connection resets on the provider's temporary result URL.
+                last_error = e
+            if attempt < 2:
+                time.sleep(0.5 * (2 ** attempt))
+        raise ProviderError(f"下载生图结果失败（重试 3 次）：{last_error}") from last_error
     raise ProviderError("生图接口返回里既没有 b64_json 也没有 url。")

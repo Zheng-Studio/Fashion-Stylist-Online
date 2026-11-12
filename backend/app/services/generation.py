@@ -3,8 +3,10 @@
 在后台线程里跑，自己开 DB 会话；过程信息实时写回 generation.params 供前端轮询。
 """
 import logging
+import httpx
 
 from app import billing as billing_mod
+from app.example_catalog import catalog
 from app.billing import Billing
 from app.config import get_settings
 from app.db import SessionLocal
@@ -12,7 +14,7 @@ from app.domain import dressing, imaging
 from app.models import Generation, Outfit, User
 from app.providers.errors import ProviderError
 from app.providers.image import ImageGen
-from app.serializers import item_out, user_gen_base
+from app.serializers import example_item_out, item_out, user_gen_base
 from app.storage import Storage
 
 log = logging.getLogger(__name__)
@@ -54,16 +56,33 @@ def _dress(db, gen: Generation, image_gen: ImageGen, storage: Storage, billing: 
     if user is None or outfit is None:
         raise GenerationError("搭配或用户已不存在。")
 
-    base_key = user_gen_base(user)
+    base_key = (gen.params or {}).get("base") or user_gen_base(user)
     if not base_key:
         raise GenerationError("还没有上传本人照片，无法生成上身图。请先在「我」里上传一张全身照。")
-    items = dressing.order_items([item_out(link.item) for link in outfit.links])
+    example_ids = outfit.example_item_ids or []
+    if any(item_id not in catalog() for item_id in example_ids):
+        raise GenerationError("示例单品已不存在。")
+    items = dressing.order_items(
+        [item_out(link.item) for link in outfit.links]
+        + [example_item_out(item_id) for item_id in example_ids]
+    )
     if not items:
         raise GenerationError("这套搭配没有单品，无法生成。")
 
     try:
         person = storage.get(base_key)
-        garments = [storage.get(it["primary_path"]) for it in items]
+        garments = []
+        for item in items:
+            path = item["primary_path"]
+            if item.get("source") == "example":
+                try:
+                    response = httpx.get(path, timeout=30)
+                    response.raise_for_status()
+                    garments.append(imaging.normalize_to_jpeg(response.content))
+                except (httpx.HTTPError, ValueError) as e:
+                    raise GenerationError(f"示例图片读取失败：{item['id']}") from e
+            else:
+                garments.append(storage.get(path))
     except FileNotFoundError as e:
         raise GenerationError(f"图片文件缺失：{e}") from e
 

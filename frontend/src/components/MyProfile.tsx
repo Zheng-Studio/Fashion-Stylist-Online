@@ -1,12 +1,15 @@
 import { useState } from "react";
+import { ChevronRight } from "lucide-react";
 import { updateMe } from "../api";
 import type { Me } from "../types";
 import { errMsg } from "../utils";
+import TryonHistory from "./TryonHistory";
 import MyPhotos from "./MyPhotos";
 import { useModelPhotoEditor } from "./useModelPhotoEditor";
 
 // 「我」：名字 + 本人照片（生图底图从这里选）
 export default function MyProfile({ me, onUpdated }: { me: Me; onUpdated: (m: Me) => void }) {
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [name, setName] = useState(me.name);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
@@ -27,6 +30,8 @@ export default function MyProfile({ me, onUpdated }: { me: Me; onUpdated: (m: Me
       setSaving(false);
     }
   }
+
+  if (historyOpen) return <TryonHistory onBack={() => setHistoryOpen(false)} />;
 
   return (
     <div className="my-profile">
@@ -57,6 +62,10 @@ export default function MyProfile({ me, onUpdated }: { me: Me; onUpdated: (m: Me
       />
 
       {msg && <div className="form-msg">{msg}</div>}
+      <button className="my-profile-nav" type="button" onClick={() => setHistoryOpen(true)}>
+        <span>试穿历史</span>
+        <ChevronRight size={18} aria-hidden="true" />
+      </button>
       {photoEditor.dialog}
     </div>
   );

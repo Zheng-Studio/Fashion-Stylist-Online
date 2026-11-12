@@ -10,7 +10,7 @@ from sqlalchemy.exc import DBAPIError
 from app import tasks
 from app.config import get_settings
 from app.db import SessionLocal
-from app.routers import generations, images, items, me, outfits, recommend
+from app.routers import generations, images, items, me, onboarding, outfits, recommend
 from app.storage import LocalStorage, get_storage
 
 logging.basicConfig(level=logging.INFO)
@@ -44,7 +44,7 @@ def create_app() -> FastAPI:
     def health():
         return {"status": "ok"}
 
-    for r in (me, items, images, recommend, outfits, generations):
+    for r in (me, items, images, recommend, outfits, generations, onboarding):
         app.include_router(r.router)
 
     # 本地存储时由后端直接托管文件；换对象存储后这里不挂，前端直连存储/CDN

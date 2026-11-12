@@ -7,7 +7,7 @@ URL 由前端按 key 拼，换对象存储时数据不用迁。
 import datetime
 import uuid
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -28,6 +28,8 @@ class User(Base):
     # 平台侧用户标识（Lucimix 传来的用户 id）；dev 模式下就是请求带的 token
     external_id: Mapped[str] = mapped_column(String(128), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(64), default="")
+    gender: Mapped[str] = mapped_column(String(16), default="")
+    onboarding_completed: Mapped[bool] = mapped_column(Boolean, default=False)
     gen_base: Mapped[str | None] = mapped_column(String(255))  # 生图底图；空则回落 photos[0]
     photos: Mapped[list] = mapped_column(JSON, default=list)  # 本人照片 key 列表
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=now)
@@ -58,6 +60,8 @@ class Outfit(Base):
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
     user_id: Mapped[str] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), index=True)
     note: Mapped[str] = mapped_column(Text, default="")
+    # Example IDs are a snapshot of the selected fixed scene, separate from personal Item rows.
+    example_item_ids: Mapped[list] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=now)
 
     links: Mapped[list["OutfitItem"]] = relationship(

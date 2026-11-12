@@ -1,5 +1,6 @@
 """ORM 对象 → API 返回的字典。"""
 from app.models import Generation, Item, Outfit, User
+from app.example_catalog import catalog
 
 
 def primary_path(item: Item) -> str | None:
@@ -38,6 +39,8 @@ def user_out(user: User) -> dict:
         "name": user.name or "",
         "gen_base": user_gen_base(user),
         "photos": user.photos or [],
+        "gender": user.gender or "",
+        "onboarding_completed": bool(user.onboarding_completed),
     }
 
 
@@ -57,8 +60,21 @@ def outfit_out(outfit: Outfit, generations: list[Generation] | None = None) -> d
         "id": outfit.id,
         "note": outfit.note or "",
         "created_at": outfit.created_at.isoformat() if outfit.created_at else "",
-        "items": [item_out(link.item) for link in outfit.links],
+        "items": [item_out(link.item) for link in outfit.links]
+        + [example_item_out(item_id) for item_id in (outfit.example_item_ids or []) if item_id in catalog()],
     }
     if generations is not None:
         out["generations"] = [generation_out(g) for g in generations]
     return out
+
+
+def example_item_out(item_id: str) -> dict:
+    item = catalog()[item_id]
+    return {
+        **item,
+        "source": "example",
+        "images": [],
+        "primary_image_id": None,
+        "primary_path": item["image_url"],
+        "created_at": "",
+    }

@@ -12,5 +12,6 @@ const FILES_BASE = import.meta.env.VITE_FILES_BASE ?? "/files/";
 // （旋转也是写新 key），所以 URL 天然不可变，不需要任何破缓存参数。
 export function assetUrl(key: string | null | undefined): string {
   if (!key) return "";
+  if (/^https:\/\//.test(key)) return key;
   return FILES_BASE + key;
 }

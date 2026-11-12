@@ -1288,6 +1288,27 @@ button:active {
   font-size: 16px;
 }
 
+.my-profile-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 52px;
+  margin-top: 18px;
+  padding: 14px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.my-profile-nav svg { color: var(--muted); }
+.my-profile-nav:hover { background: var(--surface); }
+.my-profile-nav:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+
 .my-profile-sep {
   border: none;
   border-top: 1px solid var(--line);

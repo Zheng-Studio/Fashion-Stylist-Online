@@ -20,6 +20,7 @@ export interface Item {
   primary_image_id: string | null;
   primary_path: string; // 后端派生：主图 key（封面 / 选款 / 换装都用它）
   created_at: string;
+  source?: "example" | "personal";
 }
 
 // 新建/编辑单品的入参
@@ -50,6 +51,8 @@ export interface Me {
   name: string;
   gen_base: string | null; // 生图底图（已回落到第一张照片）
   photos: string[];
+  gender: "female" | "male" | "";
+  onboarding_completed: boolean;
 }
 
 export interface Outfit {
@@ -82,6 +85,22 @@ export interface Generation {
     prompts?: DressStep[];
   };
   created_at: string;
+}
+
+export interface ExampleItem {
+  id: string;
+  name: string;
+  category: string;
+  image_url: string;
+}
+
+export interface OnboardingScene {
+  id: string;
+  name: string;
+  hint: string;
+  item_ids: string[];
+  items: ExampleItem[];
+  recommended: boolean;
 }
 
 // 选款流水线的中间产物，每一段对应「推理过程」面板的一节

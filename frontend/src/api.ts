@@ -7,6 +7,7 @@ import type {
   Outfit,
   RecommendResponse,
   TagResult,
+  OnboardingScene,
 } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "";
@@ -129,6 +130,23 @@ export async function getGeneration(id: string): Promise<Generation> {
   return (await request(`/api/generations/${encodeURIComponent(id)}`, {}, "查询生图进度失败")).json();
 }
 
+export async function prepareOnboardingPhoto(file: File): Promise<Me> {
+  return (await request("/api/onboarding/photo", { method: "POST", body: fileForm("file", file, file.name) }, "照片处理失败")).json();
+}
+
+export async function fetchOnboardingScenes(gender: "female" | "male", need = ""): Promise<OnboardingScene[]> {
+  const query = new URLSearchParams({ gender, need });
+  return (await request(`/api/onboarding/scenes?${query}`, {}, "加载场景失败")).json();
+}
+
+export async function startOnboardingTryon(input: { gender: "female" | "male"; scene_id: string; need?: string }): Promise<Generation> {
+  return (await request("/api/onboarding/try-on", { method: "POST", ...json(input) }, "提交试穿失败")).json();
+}
+
+export async function completeOnboarding(generationId: string): Promise<Me> {
+  return (await request("/api/onboarding/complete", { method: "POST", ...json({ generation_id: generationId }) }, "保存首次体验失败")).json();
+}
+
 // ---------------------------------------------------------------------------
 // 选款
 // ---------------------------------------------------------------------------
@@ -137,4 +155,8 @@ export async function postRecommend(
   history?: { role: string; text: string }[],
 ): Promise<RecommendResponse> {
   return (await request("/api/recommend", { method: "POST", ...json({ need, history: history ?? [] }) }, "选款请求失败")).json();
+}
+
+export async function fetchTryonHistory(offset = 0): Promise<{ items: (Generation & { outfit: Outfit })[]; has_more: boolean }> {
+  return (await request(`/api/generations?offset=${offset}`, {}, "加载试穿历史失败")).json();
 }
