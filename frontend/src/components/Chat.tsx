@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { createGeneration, createOutfit, getGeneration, postRecommend } from "../api";
-import type { DressStep, RecommendResponse } from "../types";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createGeneration, createOutfit, fetchRecommendReadiness, getGeneration, postRecommend } from "../api";
+import type { DressStep, RecommendReadiness, RecommendResponse } from "../types";
 import { assetUrl, errMsg } from "../utils";
 import Inspector from "./Inspector";
 import Lightbox from "./Lightbox";
 import PromptsModal from "./PromptsModal";
+import WardrobeSetupCard from "./WardrobeSetupCard";
 
 interface Msg {
   role: "user" | "assistant";
@@ -37,10 +38,26 @@ const HISTORY_LIMIT = 8;
 const GEN_POLL_INTERVAL = 2000;
 const GEN_POLL_MAX = 300;
 
-export default function Chat() {
+export default function Chat({
+  active = true,
+  onAddClothes,
+}: {
+  // 对话页常驻挂载（App 里只切显隐），每次切回来都要重新查衣橱够不够。
+  active?: boolean;
+  onAddClothes?: () => void;
+} = {}) {
   const [msgs, setMsgs] = useState<Msg[]>([
     { role: "assistant", text: "你好，说说今天的穿衣需求吧。", system: true },
   ]);
+  // null = 还不知道（加载中或查询失败）；查不到时不拦，照常让用户说话。
+  const [readiness, setReadiness] = useState<RecommendReadiness | null>(null);
+  const notReady = readiness !== null && !readiness.ready;
+  const refreshReadiness = useCallback(() => {
+    fetchRecommendReadiness().then(setReadiness, () => setReadiness(null));
+  }, []);
+  useEffect(() => {
+    if (active) refreshReadiness();
+  }, [active, refreshReadiness]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null); // 打开推理过程的消息
@@ -73,6 +90,8 @@ export default function Chat() {
       setMsgs((m) => [...m, { role: "assistant" as const, text: replyText(res), trace: res }]);
     } catch (e) {
       setMsgs((m) => [...m, { role: "assistant", text: `请求出错了：${errMsg(e)}`, system: true }]);
+      // 可能是衣橱在别处被删空了（后端 409），重新查一次，必要时切到引导。
+      refreshReadiness();
     } finally {
       setLoading(false);
     }
@@ -140,6 +159,8 @@ export default function Chat() {
     <div className="chat">
       <div className="chat-log" ref={logRef}>
         {msgs.map((m, i) => {
+          // 衣橱不够时开场白「说说需求」会误导，换成下面的引导卡。
+          if (notReady && i === 0 && m.system) return null;
           const expanded = i === expandedIdx;
           return (
             <div key={i} className="msg">
@@ -168,12 +189,16 @@ export default function Chat() {
           );
         })}
         {loading && <div className="bubble assistant">正在思考…</div>}
+        {notReady && readiness && (
+          <WardrobeSetupCard readiness={readiness} actionLabel="去衣橱添加" onAction={onAddClothes} />
+        )}
       </div>
       {expandedIdx !== null && msgs[expandedIdx]?.trace && (
         <Inspector res={msgs[expandedIdx].trace!} onClose={() => setExpandedIdx(null)} />
       )}
       {zoom && <Lightbox src={zoom} onClose={() => setZoom(null)} />}
-      {/* 用 form：回车（移动端键盘 enterkeyhint=send）直接发送 */}
+      {/* 用 form：回车（移动端键盘 enterkeyhint=send）直接发送。衣橱凑不出一套时不给输入框，只留引导。 */}
+      {!notReady && (
       <form
         className="chat-input"
         onSubmit={(e) => {
@@ -193,6 +218,7 @@ export default function Chat() {
           发送
         </button>
       </form>
+      )}
     </div>
   );
 }

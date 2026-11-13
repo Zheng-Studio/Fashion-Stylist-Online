@@ -24,7 +24,7 @@ async def lifespan(_app: FastAPI):
         with SessionLocal() as db:
             n = tasks.fail_stale_generations(db)
             if n:
-                log.info("标记了 %d 条中断的生图任务为失败", n)
+                log.info("标记了 %d 条中断的生图任务（试穿 / 单品）为失败", n)
     except DBAPIError:
         log.warning("数据库表还没建：请先在 backend 目录运行 `alembic upgrade head`")
     yield

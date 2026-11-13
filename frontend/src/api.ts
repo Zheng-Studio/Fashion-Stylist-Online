@@ -3,8 +3,11 @@ import type {
   Generation,
   Item,
   ItemInput,
+  ItemJob,
+  ItemPatch,
   Me,
   Outfit,
+  RecommendReadiness,
   RecommendResponse,
   TagResult,
   OnboardingScene,
@@ -51,7 +54,14 @@ export async function fetchMe(): Promise<Me> {
 }
 
 export async function updateMe(
-  patch: { name?: string; gen_base?: string; photos?: string[] },
+  patch: {
+    name?: string;
+    gender?: "female" | "male" | "";
+    age?: number | null;
+    height_cm?: number | null;
+    gen_base?: string;
+    photos?: string[];
+  },
 ): Promise<Me> {
   return (await request("/api/me", { method: "PUT", ...json(patch) }, "保存失败")).json();
 }
@@ -62,6 +72,11 @@ export async function uploadMyPhoto(file: Blob): Promise<Me> {
 
 export async function deleteMyPhoto(path: string): Promise<Me> {
   return (await request("/api/me/photos", { method: "DELETE", ...json({ path }) }, "删除照片失败")).json();
+}
+
+// 清空衣橱、照片、搭配和试穿记录，回到首次体验状态
+export async function resetMe(): Promise<Me> {
+  return (await request("/api/me/reset", { method: "POST" }, "重新开始失败")).json();
 }
 
 // ---------------------------------------------------------------------------
@@ -82,37 +97,80 @@ export async function autoTagImage(file: Blob): Promise<TagResult> {
   return (await request("/api/items/auto-tag", { method: "POST", body: fileForm("file", file) }, "识别失败，请手动填写")).json();
 }
 
-export async function createItem(input: ItemInput): Promise<Item> {
-  return (await request("/api/items", { method: "POST", ...json(input) }, "新建单品失败")).json();
+/** 衣橱拖拽排序：传自己全部单品的 id（新顺序）。 */
+export async function reorderItems(ids: string[]): Promise<void> {
+  await request("/api/items/reorder", { method: "POST", ...json({ ids }) }, "保存排序失败");
 }
 
-export async function updateItem(id: string, input: ItemInput): Promise<Item> {
-  return (await request(`/api/items/${id}`, { method: "PUT", ...json(input) }, "保存单品失败")).json();
+export async function createItem(input: ItemInput): Promise<Item> {
+  return (await request("/api/items", { method: "POST", ...json(input) }, "新建单品失败")).json();
 }
 
 export async function deleteItem(id: string): Promise<void> {
   await request(`/api/items/${id}`, { method: "DELETE" }, "删除单品失败");
 }
 
+/** 衣橱多选批量删除：全有或全无，有一件不是自己的就整批失败。 */
+export async function batchDeleteItems(ids: string[]): Promise<void> {
+  await request("/api/items/batch-delete", { method: "POST", ...json({ ids }) }, "批量删除失败");
+}
+
+// ---------------------------------------------------------------------------
+// 单品页：每个操作调用即生效，都返回更新后的整件单品（带后台生成任务）
+// ---------------------------------------------------------------------------
+export async function fetchItem(id: string): Promise<Item> {
+  return (await request(`/api/items/${id}`, {}, "加载单品失败")).json();
+}
+
+export async function patchItem(id: string, patch: ItemPatch): Promise<Item> {
+  return (await request(`/api/items/${id}`, { method: "PATCH", ...json(patch) }, "保存失败")).json();
+}
+
+export async function addItemImage(id: string, file: Blob): Promise<Item> {
+  return (await request(`/api/items/${id}/images`, { method: "POST", body: fileForm("file", file) }, "添加图片失败")).json();
+}
+
+export async function rotateItemImage(id: string, imageId: string, direction: "cw" | "ccw"): Promise<Item> {
+  return (
+    await request(`/api/items/${id}/images/${imageId}/rotate`, { method: "POST", ...json({ direction }) }, "旋转失败")
+  ).json();
+}
+
+export async function setItemPrimary(id: string, imageId: string): Promise<Item> {
+  return (await request(`/api/items/${id}/primary`, { method: "PUT", ...json({ image_id: imageId }) }, "设置主图失败")).json();
+}
+
+export async function deleteItemImage(id: string, imageId: string): Promise<Item> {
+  return (await request(`/api/items/${id}/images/${imageId}`, { method: "DELETE" }, "删除图片失败")).json();
+}
+
+/** 开始后台生成（标准照 / 自定义编辑）。立即返回；完成后结果追加进图库，结果图 id = job_id。 */
+export async function startItemJob(
+  id: string,
+  input: { kind: ItemJob["kind"]; source_image_id: string; prompt?: string },
+): Promise<{ job_id: string; item: Item }> {
+  return (await request(`/api/items/${id}/jobs`, { method: "POST", ...json(input) }, "开始生成失败")).json();
+}
+
+/** 关掉一条失败任务的提示。 */
+export async function dismissItemJob(id: string, jobId: string): Promise<Item> {
+  return (await request(`/api/items/${id}/jobs/${jobId}`, { method: "DELETE" }, "操作失败")).json();
+}
+
 // ---------------------------------------------------------------------------
 // 图片工具
 // ---------------------------------------------------------------------------
-// 白底标准照 / AI 编辑：纯图像变换，传源图字节、拿结果 Blob，调用方决定要不要落库。
-export async function generateImage(
-  kind: "normalized" | "edited",
-  source: Blob,
-  prompt?: string,
-): Promise<Blob> {
-  const form = fileForm("source", source, "source.jpg");
-  form.append("kind", kind);
-  if (prompt) form.append("prompt", prompt);
-  return (await request("/api/images/generate", { method: "POST", body: form }, "生成失败")).blob();
-}
+/**
+ * 同步生图（不落库），现在只有「我」里的本人照片编辑在用；单品的生成走上面的后台任务。
+ * 只选场景 + 传用户指令；提示词、尺寸和兜底约束都由后端按场景决定（domain/image_scenes.py）。
+ */
+export type ImageScene = "item_normalize" | "item_edit" | "photo_edit";
 
-// 顺时针转 90°：后端写成新文件，返回新 key（旧文件在单品保存时清理）
-export async function rotateImage(path: string): Promise<string> {
-  const res = await request("/api/images/rotate", { method: "POST", ...json({ path }) }, "旋转失败");
-  return (await res.json()).path as string;
+export async function generateImage(scene: ImageScene, source: Blob, instruction?: string): Promise<Blob> {
+  const form = fileForm("source", source, "source.jpg");
+  form.append("kind", scene);
+  if (instruction) form.append("prompt", instruction);
+  return (await request("/api/images/generate", { method: "POST", body: form }, "生成失败")).blob();
 }
 
 // ---------------------------------------------------------------------------
@@ -130,8 +188,11 @@ export async function getGeneration(id: string): Promise<Generation> {
   return (await request(`/api/generations/${encodeURIComponent(id)}`, {}, "查询生图进度失败")).json();
 }
 
-export async function prepareOnboardingPhoto(file: File): Promise<Me> {
-  return (await request("/api/onboarding/photo", { method: "POST", body: fileForm("file", file, file.name) }, "照片处理失败")).json();
+/** enhance=false：跳过 AI 补全，直接用原图作为换装底图（仍会估计性别 / 年龄 / 身高）。 */
+export async function prepareOnboardingPhoto(file: File, options: { enhance?: boolean } = {}): Promise<Me> {
+  const form = fileForm("file", file, file.name);
+  form.append("enhance", String(options.enhance ?? true));
+  return (await request("/api/onboarding/photo", { method: "POST", body: form }, "照片处理失败")).json();
 }
 
 export async function fetchOnboardingScenes(gender: "female" | "male", need = ""): Promise<OnboardingScene[]> {
@@ -150,6 +211,10 @@ export async function completeOnboarding(generationId: string): Promise<Me> {
 // ---------------------------------------------------------------------------
 // 选款
 // ---------------------------------------------------------------------------
+export async function fetchRecommendReadiness(): Promise<RecommendReadiness> {
+  return (await request("/api/recommend/readiness", {}, "检查衣橱失败")).json();
+}
+
 export async function postRecommend(
   need: string,
   history?: { role: string; text: string }[],

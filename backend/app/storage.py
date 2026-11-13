@@ -7,6 +7,7 @@
 key 一律带 uuid、写入后不再原地修改（旋转等操作都写新 key），所以 URL 天然不可变，
 缓存/CDN 不会拿到旧图——家庭版为了原地覆盖的图专门搞过一套 mtime 版本号，这里不需要了。
 """
+import shutil
 import uuid
 from functools import lru_cache
 from pathlib import Path
@@ -20,6 +21,7 @@ class Storage(Protocol):
     def get(self, key: str) -> bytes: ...
     def exists(self, key: str) -> bool: ...
     def delete(self, key: str) -> None: ...
+    def delete_prefix(self, prefix: str) -> None: ...
 
 
 def new_key(user_id: str, kind: str, ext: str = "jpg") -> str:
@@ -64,6 +66,16 @@ class LocalStorage:
             self._path(key).unlink(missing_ok=True)
         except ValueError:
             pass
+
+    def delete_prefix(self, prefix: str) -> None:
+        """删除某个前缀下的全部文件（如 u/<user_id>/），用于账号重置。"""
+        try:
+            base = self._path(prefix.rstrip("/"))
+        except ValueError:
+            return
+        if base == self.root:
+            raise ValueError("拒绝删除整个存储根目录")
+        shutil.rmtree(base, ignore_errors=True)
 
 
 @lru_cache

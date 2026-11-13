@@ -10,6 +10,57 @@ checks。detail 带上凶手单品的 id + 品类，供校验失败回喂模型�
 """
 from app.domain import taxonomy
 
+# 「可以开始 AI 搭配」的唯一标准：衣橱能搭出至少这么多套。
+# 对话页、衣橱页的引导和 /api/recommend 的拦截都用它，过了就能用，不过就不行。
+#   套数 = 上衣数 × 下装数 + 整身数
+# 上衣 = 内搭 + 外套（外套单穿也算上身有覆盖）；整身（连衣裙 / 连体裤）只能单独成套，
+# 一件算一套。鞋帽配饰不影响套数。4 = 两件上衣 × 两件下装，给模型留出挑选余地。
+MIN_OUTFITS = 4
+
+GAP_UPPER = "上衣"
+GAP_LOWER = "下装"
+
+
+def _counts(categories: list[str | None]) -> tuple[int, int, int]:
+    slots = [taxonomy.slot_of(c) for c in categories]
+    return slots.count("upper"), slots.count("lower"), slots.count("full")
+
+
+def outfit_count(tops: int, bottoms: int, one_pieces: int) -> int:
+    return tops * bottoms + one_pieces
+
+
+def wardrobe_readiness(categories: list[str | None]) -> dict:
+    """衣橱能搭出几套、够不够开始，以及最少还要补什么。
+
+    补的建议按贪心算：每次补「多出套数更多」的一边（补一件上衣多出「下装数」套，
+    补一件下装多出「上衣数」套），一样多时先补上衣。不推荐补整身——一件只多一套。
+    """
+    tops, bottoms, one_pieces = _counts(categories)
+    have = outfit_count(tops, bottoms, one_pieces)
+    add_tops = add_bottoms = 0
+    t, b = tops, bottoms
+    while outfit_count(t, b, one_pieces) < MIN_OUTFITS:
+        if b > t:
+            t, add_tops = t + 1, add_tops + 1
+        elif t > b:
+            b, add_bottoms = b + 1, add_bottoms + 1
+        else:  # 一样多：先补上衣
+            t, add_tops = t + 1, add_tops + 1
+    missing = []
+    if add_tops:
+        missing.append(f"{GAP_UPPER} {add_tops} 件")
+    if add_bottoms:
+        missing.append(f"{GAP_LOWER} {add_bottoms} 件")
+    return {
+        "ready": have >= MIN_OUTFITS,
+        "outfits": {"have": have, "need": MIN_OUTFITS},
+        "tops": tops,
+        "bottoms": bottoms,
+        "one_pieces": one_pieces,
+        "missing": missing,
+    }
+
 
 def _label(item_id: str, items_by_id: dict[str, dict]) -> str:
     """把单品渲染成 `id(品类)`，让回喂消息里模型看得懂是哪件。"""

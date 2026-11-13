@@ -7,10 +7,11 @@
 
 ## 功能
 
-- **对话选款**：大模型从衣橱候选里挑一套，支持"把刚才的裤子换成裙子"这类连续调整。
+- **对话选款**：大模型从衣橱候选里挑一套，支持"把刚才的裤子换成裙子"这类连续调整。衣橱**能搭出至少 4 套**（上衣数 × 下装数 + 连衣裙 / 连体裤数）才能开始，不够时对话页和衣橱页显示引导，标准在 `backend/app/domain/structure.py` 的 `MIN_OUTFITS`。
 - **上身效果图**：本人照片 + 整套单品，一次调用生成。
-- **衣橱管理**：上传单品图后自动打标（名称、品类、颜色、季节等），也可手动编辑；单品支持白底标准照和 AI 编辑。
-- **我**：管理本人照片，选一张作为生图底图。
+- **衣橱管理**：上传单品图后自动打标（名称、品类、颜色、季节等）。单品页打开就是详情，所有信息直接改、即时保存（没有「编辑 / 保存」）；生成标准照、自定义编辑在后台跑，完成后自动加进这件单品的图库。
+- **我**：管理本人照片和性别 / 年龄 / 身高（可随时修改），选一张照片作为生图底图。
+- **清除全部数据**：「我」里可清除衣橱、本人照片、搭配和试穿记录，回到新用户状态（账号保留，需要重新走首次体验）。
 - **首次体验**：新用户先上传本人照片，用预置示例单品生成一张试穿图，再进入正常使用（示例单品不写入个人衣橱）。
 
 **收费**：上身效果图、单品 AI 编辑、白底标准照收费，**成功后才扣**，失败不扣；选款和自动打标不收费。
@@ -60,7 +61,7 @@ cd frontend ; npm run dev                          # 前端 http://localhost:517
 
 ### 新用户首次体验
 
-新用户（`onboarding_completed` 为 false）先进入一条独立流程：上传本人照片 → AI 补全为全身照并推断性别（可修改）→ 选一个预置场景（每个场景 3–4 件单品）→ 生成一张试穿图 → 完成后才进入正常应用。已有用户在迁移后保持原来的正常页面。
+新用户（`onboarding_completed` 为 false）先进入一条独立流程：上传本人照片 → AI 补全为全身照（照片已满意也可以选「直接使用原图」跳过这一步），并估计性别、年龄、身高（**都是可改的默认值**）→ 选一个预置场景（每个场景 3–4 件单品）→ 生成一张试穿图 → 完成后才进入正常应用。已有用户在迁移后保持原来的正常页面。
 
 预置单品目录在 [backend/sample/example_items.json](backend/sample/example_items.json)，**运行时只读，不写进个人衣橱**，搭配上只记 `example_item_ids`。
 
@@ -74,12 +75,13 @@ cd frontend ; npm run dev                          # 前端 http://localhost:517
 | `LLM_JSON_MODE` | 结构化输出方式：`json_schema` / `json_object`（默认）/ `none`，按厂商支持程度选 |
 | `IMAGE_MODEL` | 生图模型（OpenAI 兼容 `images/generations`） |
 | `IMAGE_BASE_URL` / `IMAGE_API_KEY` | 生图接口地址和密钥，不填沿用 LLM 的 |
-| `IMAGE_SIZE` | 生图输出像素，默认 `1728x2304`（3:4），须是所选模型支持的尺寸 |
+| `IMAGE_SIZE` | 生图输出像素，默认 `1728x2304`（3:4），须是所选模型支持的尺寸。人物补全、上身效果图、本人照片编辑用它 |
+| `IMAGE_SIZE_SQUARE` | 单品场景（白底、单品 AI 编辑）请求的方形尺寸，如 `2048x2048`；不填沿用 `IMAGE_SIZE`。AI 生成的单品图落盘统一 1280×1280 方图；用户上传的图按原样保存（只转码、长边缩到 1280） |
 | `DATABASE_URL` | 默认 `backend/data/app.db`（SQLite）；线上填 Postgres |
 | `STORAGE_DIR` | 图片存储目录，默认 `backend/data/files` |
 | `AUTH_MODE` / `BILLING_MODE` | 本地开发使用 `dev` / `ledger`；部署注意事项见下文「部署」 |
 | `CORS_ORIGINS` | 允许的前端来源，JSON 数组，默认 `["*"]`；同源反代时不用改 |
-| `TASK_WORKERS` | 生图任务并发数，默认 2（进程内线程池） |
+| `TASK_WORKERS` | 生图后台任务并发线程数，默认 4（进程内线程池，试穿和单品生图共用）。可按模型服务的并发配额调大；每个用户同时最多 3 个生图任务 |
 
 前端构建时可注入：`VITE_API_BASE`（前后端不同源时）、`VITE_FILES_BASE`（图片走对象存储 / CDN 时）。
 
@@ -156,12 +158,12 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 frontend/  React + Vite + TypeScript
   src/auth.ts           token：iframe 地址 ?token= 或 postMessage，每个请求带 Authorization: Bearer
   src/api.ts            所有接口调用
-  src/components/       Chat（对话选款 + 生图）/ Wardrobe + ItemForm（衣橱）/ MyProfile（我 + 照片）/ Onboarding（首次体验）/ TryonHistory（试穿记录）
+  src/components/       Chat（对话选款 + 生图）/ Wardrobe + ItemPage（衣橱 + 单品页：详情即编辑，每个操作即时生效）/ MyProfile（我 + 照片）/ Onboarding（首次体验）/ TryonHistory（试穿记录）
 
 backend/   FastAPI + SQLAlchemy 2 + Alembic
   app/routers/          me / items / images / recommend / outfits / generations / onboarding：参数校验、权限、错误码
-  app/services/         recommend（选款流水线）/ tagging（自动打标）/ generation（生图任务）：编排
-  app/domain/           纯逻辑，不做 IO，可直接单测：选款提示词、校验、搭配结构、换装提示词、图片处理
+  app/services/         recommend（选款流水线）/ tagging（自动打标）/ generation（生图任务）/ imagegen（按场景调生图：尺寸 + 方图补边）：编排
+  app/domain/           纯逻辑，不做 IO，可直接单测：选款提示词、校验、搭配结构、图片处理；image_scenes.py = 全部生图场景的提示词、尺寸、兜底约束
   app/providers/        外部模型：llm.py / image.py
   app/example_catalog.py  首次体验的预置单品和场景（只读，不入库）
   app/auth.py           登录         ┐

@@ -1,5 +1,9 @@
 # Design System Inspired by Lovable
 
+> **本项目配色已偏离本文（2026-11）**：暖奶油色（`#f7f4ed` / `#fcfbf8` / `#eceae4`）弃用，改为中性白 + 极浅灰：
+> 页面底 `#f6f6f7`、卡片 / 输入 / 侧栏 `#ffffff`、分隔线 `#e6e6e9`、次级文字 `#5f6064`。
+> 以 `frontend/src/styles.css` 顶部的 `:root` 令牌为准；本文的版式、圆角、不透明度灰阶、按钮规范仍然适用。
+
 ## 1. Visual Theme & Atmosphere
 
 Lovable's website radiates warmth through restraint. The entire page sits on a creamy, parchment-toned background (`#f7f4ed`) that immediately separates it from the cold-white conventions of most developer tool sites. This isn't minimalism for minimalism's sake — it's a deliberate choice to feel approachable, almost analog, like a well-crafted notebook. The near-black text (`#1c1c1c`) against this warm cream creates a contrast ratio that's easy on the eyes while maintaining sharp readability.

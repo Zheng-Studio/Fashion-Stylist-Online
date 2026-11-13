@@ -15,9 +15,16 @@ def _charges():
         return [(c.action, c.ref_id) for c in db.scalars(select(ChargeRecord))]
 
 
+def _stock(client, user="alice"):
+    """补一件上衣和一件下装，让衣橱达到开始搭配的标准（≥4 套）。建在后面，不影响前面单品的句柄。"""
+    create_item(client, "内搭", "备用T恤", user=user)
+    create_item(client, "下装", "备用牛仔裤", user=user)
+
+
 def test_recommend_maps_handles_to_items(client, llm):
     top = create_item(client, "内搭", "白衬衫")
     bottom = create_item(client, "下装", "黑裤")
+    _stock(client)
     create_item(client, "内搭", "别人的衬衫", user="bob")  # 别人的单品不进候选
     llm.replies = [recommend_reply(["内搭1", "下装1"])]
 
@@ -32,6 +39,7 @@ def test_recommend_retries_on_invalid_structure(client, llm):
     create_item(client, "内搭", "白衬衫")
     create_item(client, "下装", "黑裤")
     create_item(client, "整身", "连衣裙")
+    _stock(client)
     # 第一次：下装 + 整身同时出现，结构校验不过；第二次修正
     llm.replies = [recommend_reply(["内搭1", "下装1", "整身1"]), recommend_reply(["整身1"])]
     r = client.post("/api/recommend", json={"need": "约会，四季"}, headers=auth("alice")).json()
@@ -43,9 +51,57 @@ def test_recommend_retries_on_invalid_structure(client, llm):
 
 def test_recommend_rejects_made_up_handles(client, llm):
     create_item(client, "内搭", "白衬衫")
+    create_item(client, "下装", "黑裤")
+    _stock(client)
     llm.replies = [recommend_reply(["内搭9"]), recommend_reply(["内搭9"])]
     r = client.post("/api/recommend", json={"need": "随便，四季"}, headers=auth("alice")).json()
     assert r["passed"] is False and r["enriched"] is None
+
+
+def test_start_standard_is_at_least_four_outfits(client, llm):
+    def readiness(user="alice"):
+        return client.get("/api/recommend/readiness", headers=auth(user)).json()
+
+    empty = readiness()
+    assert empty["ready"] is False and empty["item_count"] == 0
+    assert empty["outfits"] == {"have": 0, "need": 4}
+    assert empty["missing"] == ["上衣 2 件", "下装 2 件"]
+
+    create_item(client, "鞋", "白鞋")  # 鞋帽配饰不影响套数
+    create_item(client, "内搭", "白衬衫")
+    create_item(client, "下装", "黑裤")
+    r = readiness()
+    assert r["outfits"]["have"] == 1 and r["item_count"] == 3
+    assert r["missing"] == ["上衣 1 件", "下装 1 件"]
+
+    # 没达到标准就不调模型，直接 409，和引导是同一条线。
+    r = client.post("/api/recommend", json={"need": "通勤"}, headers=auth("alice"))
+    assert r.status_code == 409 and r.json()["detail"] == "衣橱里的单品还不够，再添加一些就能开始 AI 搭配"
+    assert llm.calls == []
+
+    create_item(client, "外套", "风衣")  # 外套也算上衣：2×1 = 2
+    assert readiness()["missing"] == ["下装 1 件"]
+    create_item(client, "下装", "半身裙")  # 2×2 = 4
+    r = readiness()
+    assert r["ready"] is True and r["outfits"]["have"] == 4 and r["missing"] == []
+    assert (r["tops"], r["bottoms"], r["one_pieces"]) == (2, 2, 0)
+
+
+def test_one_piece_counts_as_one_outfit(client):
+    def readiness():
+        return client.get("/api/recommend/readiness", headers=auth("bob")).json()
+
+    # 只算自己的衣橱；整身只能单独成套，一件算一套。
+    for name in ("连衣裙", "连体裤"):
+        create_item(client, "整身", name, user="bob")
+    r = readiness()
+    assert r["outfits"]["have"] == 2 and r["ready"] is False
+    create_item(client, "内搭", "T恤", user="bob")
+    create_item(client, "下装", "短裤", user="bob")
+    r = readiness()
+    assert r["outfits"]["have"] == 3 and r["missing"] == ["上衣 1 件"]
+    create_item(client, "内搭", "衬衫", user="bob")  # 2×1 + 2 = 4
+    assert readiness()["ready"] is True
 
 
 def test_auto_tag(client, llm):
@@ -116,7 +172,7 @@ def test_image_normalize_is_padded_and_charged(client, image_gen):
     r = client.post(
         "/api/images/generate",
         files={"source": ("s.jpg", jpeg(), "image/jpeg")},
-        data={"kind": "normalized"},
+        data={"kind": "item_normalize"},
         headers=auth("alice"),
     )
     assert r.status_code == 200
@@ -126,7 +182,7 @@ def test_image_normalize_is_padded_and_charged(client, image_gen):
 
 def test_image_edit_requires_prompt(client, image_gen):
     r = client.post("/api/images/generate", files={"source": ("s.jpg", jpeg(), "image/jpeg")},
-                    data={"kind": "edited", "prompt": "  "}, headers=auth("alice"))
+                    data={"kind": "item_edit", "prompt": "  "}, headers=auth("alice"))
     assert r.status_code == 400 and image_gen.calls == []
 
 

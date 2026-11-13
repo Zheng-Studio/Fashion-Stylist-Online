@@ -132,12 +132,19 @@ export default function App() {
             chat-pane 的 height:100% 把 content→pane→.chat 的百分比高度链接上，
             否则输入框浮在滚动末尾（键盘弹起会被顶出可视区）。 */}
         <div className="chat-pane" style={{ display: tab === "chat" ? undefined : "none" }}>
-          <Chat />
+          <Chat active={tab === "chat"} onAddClothes={() => setTab("wardrobe")} />
         </div>
         {tab === "wardrobe" && <Wardrobe />}
         {tab === "me" &&
           (me ? (
-            <MyProfile me={me} onUpdated={setMe} />
+            <MyProfile
+              me={me}
+              onUpdated={setMe}
+              onReset={(m) => {
+                setMe(m);
+                setOnboardingVisible(true);
+              }}
+            />
           ) : (
             <div className="error">{meErr || "加载中…"}</div>
           ))}

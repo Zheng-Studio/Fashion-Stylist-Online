@@ -1,14 +1,11 @@
-"""纯图片处理（不调模型、不碰存储）：转码、旋转、白底补边。"""
+"""纯图片处理（不调模型、不碰存储）：转码、旋转、方图补边。"""
 import io
 
 from PIL import Image, ImageOps
 
-# 全站落盘口径：RGB JPEG，长边 ≤ 1280，q85
+# 全站落盘口径：RGB JPEG，长边 ≤ 1280，q85。用户上传的图只走这一步；AI 生成的单品图另外补成方图（pad_to_square）
 STORE_LONG_EDGE = 1280
 STORE_QUALITY = 85
-
-# 白底标准照统一成 1280×1280 方图
-NORMALIZED_SIZE = (1280, 1280)
 
 
 def open_image(raw: bytes) -> Image.Image:
@@ -44,17 +41,32 @@ def normalize_to_jpeg(raw: bytes, long_edge: int = STORE_LONG_EDGE, quality: int
     return to_jpeg(open_image(raw), long_edge, quality)
 
 
-def rotate_clockwise(raw: bytes) -> bytes:
-    """顺时针转 90°。"""
-    return to_jpeg(open_image(raw).transpose(Image.Transpose.ROTATE_270), quality=95)
+def rotate_90(raw: bytes, clockwise: bool = True) -> bytes:
+    """转 90°：clockwise=True 顺时针，False 逆时针。"""
+    turn = Image.Transpose.ROTATE_270 if clockwise else Image.Transpose.ROTATE_90
+    return to_jpeg(open_image(raw).transpose(turn), quality=95)
 
 
-def pad_to_canvas(raw: bytes, size: tuple[int, int] = NORMALIZED_SIZE) -> bytes:
-    """等比缩进白底画布并居中（生图接口出的白底图尺寸不一，统一成方图）。"""
+def edge_color(im: Image.Image) -> tuple[int, int, int]:
+    """图片四周一圈的代表色（逐通道中位数）：补边用，让补出来的边和原背景接得上。"""
+    small = _to_rgb(im).resize((64, 64))
+    w, h = small.size
+    border = [small.getpixel((x, y)) for x in range(w) for y in (0, h - 1)]
+    border += [small.getpixel((x, y)) for y in range(1, h - 1) for x in (0, w - 1)]
+    return tuple(sorted(px[c] for px in border)[len(border) // 2] for c in range(3))  # type: ignore[return-value]
+
+
+def pad_to_square(raw: bytes, side: int, fill: str = "edge") -> bytes:
+    """等比缩放后居中放进 side×side 方图。fill="white" 补纯白；"edge" 补原图四周的颜色。
+
+    只补不裁：单品不会被切掉一截。原图比方图小时会等比放大到贴边，保证所有单品图尺寸一致。
+    """
     im = _to_rgb(open_image(raw))
-    im.thumbnail(size)
-    canvas = Image.new("RGB", size, (255, 255, 255))
-    canvas.paste(im, ((size[0] - im.width) // 2, (size[1] - im.height) // 2))
+    scale = side / max(im.size)
+    im = im.resize((max(1, round(im.width * scale)), max(1, round(im.height * scale))), Image.Resampling.LANCZOS)
+    color = (255, 255, 255) if fill == "white" else edge_color(im)
+    canvas = Image.new("RGB", (side, side), color)
+    canvas.paste(im, ((side - im.width) // 2, (side - im.height) // 2))
     buf = io.BytesIO()
     canvas.save(buf, "JPEG", quality=STORE_QUALITY)
     return buf.getvalue()

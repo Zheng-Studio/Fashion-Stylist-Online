@@ -53,9 +53,10 @@ class FakeImage:
     def __init__(self):
         self.calls: list = []
 
-    def edit(self, images, prompt):
-        self.calls.append({"n_images": len(images), "prompt": prompt})
-        return jpeg((10, 200, 10), (100, 100))
+    def edit(self, images, prompt, size=None):
+        self.calls.append({"n_images": len(images), "prompt": prompt, "size": size})
+        # 竖图（3:4），方便断言单品场景确实补成了方图、人物场景保持竖图
+        return jpeg((10, 200, 10), (90, 120))
 
 
 @pytest.fixture(autouse=True)

@@ -10,11 +10,12 @@ from app.example_catalog import catalog
 from app.billing import Billing
 from app.config import get_settings
 from app.db import SessionLocal
-from app.domain import dressing, imaging
+from app.domain import dressing, image_scenes, imaging
 from app.models import Generation, Outfit, User
 from app.providers.errors import ProviderError
 from app.providers.image import ImageGen
 from app.serializers import example_item_out, item_out, user_gen_base
+from app.services import imagegen
 from app.storage import Storage
 
 log = logging.getLogger(__name__)
@@ -95,9 +96,9 @@ def _dress(db, gen: Generation, image_gen: ImageGen, storage: Storage, billing: 
         db.commit()
 
     progress(0, "整套")
-    prompt = dressing.single_prompt(items)
+    prompt = image_scenes.tryon_prompt(items)
     prompts = [{"item": "整套（" + "、".join(dressing.garment_name(it) for it in items) + "）", "prompt": prompt}]
-    result = imaging.normalize_to_jpeg(image_gen.edit([person, *garments], prompt))
+    result = imagegen.generate(image_gen, "tryon", [person, *garments], prompt)
 
     key = f"u/{user.id}/generations/{gen.id}.jpg"
     storage.put(key, result)

@@ -1,5 +1,5 @@
 """ORM 对象 → API 返回的字典。"""
-from app.models import Generation, Item, Outfit, User
+from app.models import Generation, ImageJob, Item, Outfit, User
 from app.example_catalog import catalog
 
 
@@ -12,8 +12,22 @@ def primary_path(item: Item) -> str | None:
     return chosen["path"] if chosen else None
 
 
-def item_out(item: Item) -> dict:
+def job_out(job: ImageJob) -> dict:
+    """单品后台生成任务。结果图 id 就是任务 id（status=done 后在 images 里能找到）。"""
     return {
+        "id": job.id,
+        "kind": job.kind,
+        "status": job.status,
+        "error": job.error or "",
+        "source_image_id": job.source_image_id,
+        "prompt": job.prompt or "",
+        "created_at": job.created_at.isoformat() if job.created_at else "",
+    }
+
+
+def item_out(item: Item, jobs: list[ImageJob] | None = None) -> dict:
+    """jobs 只在衣橱 / 单品页的接口里带（进行中的 + 没关掉的失败任务），别处不需要。"""
+    out = {
         "id": item.id,
         "name": item.name or "",
         "gender": item.gender or "",
@@ -26,6 +40,9 @@ def item_out(item: Item) -> dict:
         "primary_path": primary_path(item),
         "created_at": item.created_at.isoformat() if item.created_at else "",
     }
+    if jobs is not None:
+        out["jobs"] = [job_out(j) for j in jobs]
+    return out
 
 
 def user_gen_base(user: User) -> str | None:
@@ -40,6 +57,8 @@ def user_out(user: User) -> dict:
         "gen_base": user_gen_base(user),
         "photos": user.photos or [],
         "gender": user.gender or "",
+        "age": user.age,
+        "height_cm": user.height_cm,
         "onboarding_completed": bool(user.onboarding_completed),
     }
 

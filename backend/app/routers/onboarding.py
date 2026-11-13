@@ -1,7 +1,5 @@
 """First try-on: processed person photo, fixed example scenes, and completion."""
-import re
-
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -10,58 +8,64 @@ from app import tasks
 from app.billing import Billing
 from app.db import get_db
 from app.deps import get_billing, get_current_user, get_image_gen, get_llm, get_storage
-from app.domain import imaging
+from app.domain import image_scenes, imaging, profile
 from app.example_catalog import scene_for, scene_list
 from app.models import Generation, Outfit, User
 from app.providers.errors import ProviderError
 from app.providers.image import ImageGen
 from app.providers.llm import LLM, image_part
 from app.serializers import generation_out, user_gen_base, user_out
+from app.services import imagegen
 from app.services.generation import run_generation
 from app.storage import Storage, new_key
 
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 
-PERSON_PROMPT = (
-    "编辑上传的人物照片，生成同一个人的全身正面摄影照片。优先保持原图的五官、脸型、发型、肤色和年龄特征，保留自然表情。"
-    "人物轻松直立，肩膀放松，双臂自然垂落于身体两侧，手指放松；双脚朝前，间距约一只鞋宽，重心平稳。"
-    "穿浅灰色基础款圆领短袖 T 恤、深灰色直筒长裤和白色低帮平底鞋。"
-    "衣服正常合身，有自然余量和褶皱，上衣与裤子的边界清晰。"
-    "原图未拍到的身体部分按与人物年龄、可见肩宽和上身相协调的普通人体比例补全，避免刻意拉长腿部、收窄腰部或夸大曲线。"
-    "使用浅灰色摄影棚背景和均匀柔光。相机保持水平，呈现自然平视的全身构图，避免广角透视。"
-    "人物居中，从头顶到鞋底完整入镜，上下留少量空白。画面中只有一个人。"
-)
+PROFILE_LONG_EDGE = 1024  # 估计档案不需要原图分辨率，缩小提速
 
 
-def _infer_gender(photo: bytes, llm: LLM) -> str:
-    """The field is editable; an uncertain result stays empty instead of guessing."""
+def _infer_profile(source: bytes, processed: bytes | None, llm: LLM) -> dict:
+    """估计性别 / 年龄 / 身高。失败只返回空档案，不阻断首次体验。
+
+    processed 为 None 表示用户选择直接用原图，只看这一张。
+    """
     try:
-        reply = llm.chat([{"role": "user", "content": [
-            {"type": "text", "text": "根据照片判断适合默认展示女装还是男装。只回答 female 或 male 一个词；无法判断则回答 unknown。"},
-            image_part(photo),
-        ]}], temperature=0)
-    except ProviderError:
-        return ""
-    answer = reply.strip().lower()
-    return answer if re.fullmatch(r"female|male", answer) else ""
+        images = [source] if processed is None else [source, processed]
+        parts = [image_part(imaging.normalize_to_jpeg(img, PROFILE_LONG_EDGE, 90)) for img in images]
+        reply = llm.chat(
+            [{"role": "user", "content": [
+                {"type": "text", "text": profile.profile_prompt(processed is not None)},
+                *parts,
+            ]}],
+            temperature=0,
+        )
+        return profile.parse_profile_output(reply)
+    except (ProviderError, ValueError):
+        return profile.empty_profile()
 
 
 @router.post("/photo")
 async def prepare_photo(
     file: UploadFile = File(...),
+    enhance: bool = Form(True),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     llm: LLM = Depends(get_llm),
     image_gen: ImageGen = Depends(get_image_gen),
     storage: Storage = Depends(get_storage),
 ):
+    """enhance=false：用户对原图满意，跳过 AI 补全，直接把原图作为生图底图。"""
     if user.onboarding_completed:
         raise HTTPException(409, "首次体验已完成")
     try:
-        source = imaging.normalize_to_jpeg(await file.read())
-        gender = await run_in_threadpool(_infer_gender, source, llm)
-        processed = await run_in_threadpool(image_gen.edit, [source], PERSON_PROMPT)
-        photo = imaging.normalize_to_jpeg(processed)
+        source = await run_in_threadpool(imaging.normalize_to_jpeg, await file.read())
+        if enhance:
+            photo = await run_in_threadpool(
+                imagegen.generate, image_gen, "person_fullbody", [source], image_scenes.person_fullbody_prompt()
+            )
+        else:
+            photo = source
+        inferred = await run_in_threadpool(_infer_profile, source, photo if enhance else None, llm)
     except ValueError as e:
         raise HTTPException(400, f"照片无法处理：{e}") from e
     except ProviderError as e:
@@ -70,7 +74,9 @@ async def prepare_photo(
     storage.put(key, photo)
     user.photos = [*(user.photos or []), key]
     user.gen_base = key
-    user.gender = gender
+    user.gender = inferred["gender"]
+    user.age = inferred["age"]
+    user.height_cm = inferred["height_cm"]
     db.commit()
     return user_out(user)
 

@@ -29,6 +29,8 @@ class User(Base):
     external_id: Mapped[str] = mapped_column(String(128), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(64), default="")
     gender: Mapped[str] = mapped_column(String(16), default="")
+    age: Mapped[int | None] = mapped_column(Integer)  # AI 预估，用户可改；null=未知
+    height_cm: Mapped[int | None] = mapped_column(Integer)
     onboarding_completed: Mapped[bool] = mapped_column(Boolean, default=False)
     gen_base: Mapped[str | None] = mapped_column(String(255))  # 生图底图；空则回落 photos[0]
     photos: Mapped[list] = mapped_column(JSON, default=list)  # 本人照片 key 列表
@@ -49,6 +51,8 @@ class Item(Base):
     # 图库：[{id, kind: upload|normalized|edited, path: <key>, prompt?, source_id?}]
     images: Mapped[list] = mapped_column(JSON, default=list)
     primary_image_id: Mapped[str | None] = mapped_column(String(32))
+    # 衣橱里的手动排序（拖拽），越小越靠前；新单品排最前。同一用户内有意义。
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
@@ -94,6 +98,31 @@ class Generation(Base):
     result_path: Mapped[str | None] = mapped_column(String(255))
     # 过程信息：base（底图 key）、prompts（实际提示词）、model、error 等
     params: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), default=now, onupdate=now
+    )
+
+
+class ImageJob(Base):
+    """单品图的后台生成任务（标准照 / 自定义编辑）。
+
+    单品页里每个操作即时生效：点「生成」就建一条任务，关掉单品页也照样跑；
+    成功后结果作为新图追加进单品图库（不设主图），结果图的 id = 任务 id，前端据此定位新图。
+    单品被删时随之级联删除，跑完发现任务没了就丢弃结果、不扣费。
+    """
+
+    __tablename__ = "image_job"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), index=True)
+    item_id: Mapped[str] = mapped_column(ForeignKey("item.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))  # item_normalize | item_edit
+    source_image_id: Mapped[str] = mapped_column(String(32))
+    prompt: Mapped[str] = mapped_column(Text, default="")  # 自定义编辑的用户指令（清洗后）
+    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending/running/done/failed
+    error: Mapped[str] = mapped_column(Text, default="")
+    dismissed: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")  # 失败提示被用户关掉
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), default=now, onupdate=now

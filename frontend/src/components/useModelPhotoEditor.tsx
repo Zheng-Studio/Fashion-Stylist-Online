@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { generateImage, uploadMyPhoto } from "../api";
-import { MODEL_EDIT_PRESETS } from "../constants";
+import { EDIT_PRESETS, MAX_EDIT_INSTRUCTION } from "../constants";
 import type { Me } from "../types";
 import { assetUrl, errMsg } from "../utils";
 import Modal from "./Modal";
@@ -47,7 +47,7 @@ export function useModelPhotoEditor(onUploaded: (m: Me) => void) {
     setErr("");
     try {
       const srcBlob = await fetch(assetUrl(editSrc)).then((r) => r.blob());
-      const result = await generateImage("edited", srcBlob, prompt.trim());
+      const result = await generateImage("photo_edit", srcBlob, prompt.trim());
       setResultBlob(result);
       setResultUrl(URL.createObjectURL(result));
     } catch (e) {
@@ -125,11 +125,12 @@ export function useModelPhotoEditor(onUploaded: (m: Me) => void) {
         value={prompt}
         rows={2}
         autoFocus
+        maxLength={MAX_EDIT_INSTRUCTION}
         placeholder="想怎么改这张照片，如：换成纯白背景"
         onChange={(e) => setPrompt(e.target.value)}
       />
       <div className="edit-presets">
-        {MODEL_EDIT_PRESETS.map((p) => (
+        {EDIT_PRESETS.photo_edit.map((p) => (
           <button key={p} type="button" className="preset" onClick={() => setPrompt(p)}>
             {p}
           </button>

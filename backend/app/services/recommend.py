@@ -48,6 +48,7 @@ def recommend(db: Session, user: User, need: str, history: list[dict], llm: LLM)
     prompt = prompt_builder.build_prompt(
         need, items, handles,
         wearer_name=user.name or None,
+        wearer_profile={"gender": user.gender, "age": user.age, "height_cm": user.height_cm},
         history=history,
     )
     messages = [

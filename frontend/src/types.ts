@@ -21,7 +21,23 @@ export interface Item {
   primary_path: string; // 后端派生：主图 key（封面 / 选款 / 换装都用它）
   created_at: string;
   source?: "example" | "personal";
+  // 后台生成任务（只在衣橱 / 单品页接口里带）：进行中的 + 失败了还没关掉提示的
+  jobs?: ItemJob[];
 }
+
+/** 单品图的后台生成任务（标准照 / 自定义编辑）。完成后结果图的 id 就是任务 id。 */
+export interface ItemJob {
+  id: string;
+  kind: "item_normalize" | "item_edit";
+  status: "pending" | "running" | "done" | "failed";
+  error: string;
+  source_image_id: string;
+  prompt: string;
+  created_at: string;
+}
+
+/** 单品页可以单独改的字段（PATCH 只传要改的）。 */
+export type ItemPatch = Partial<Pick<Item, "name" | "gender" | "category" | "color" | "season" | "description">>;
 
 // 新建/编辑单品的入参
 export interface ItemInput {
@@ -52,6 +68,8 @@ export interface Me {
   gen_base: string | null; // 生图底图（已回落到第一张照片）
   photos: string[];
   gender: "female" | "male" | "";
+  age: number | null; // AI 估计的默认值，用户可改
+  height_cm: number | null;
   onboarding_completed: boolean;
 }
 
@@ -119,6 +137,20 @@ export interface EnrichedResult {
   items: Item[];
   reason: string;
   confidence: number | null;
+}
+
+/**
+ * 能不能开始 AI 搭配：衣橱能搭出至少 outfits.need 套（套数 = 上衣 × 下装 + 整身）。
+ * missing 是最少还要补的，给用户看，如「下装 1 件」。
+ */
+export interface RecommendReadiness {
+  ready: boolean;
+  outfits: { have: number; need: number };
+  tops: number;
+  bottoms: number;
+  one_pieces: number;
+  missing: string[];
+  item_count: number;
 }
 
 export interface RecommendResponse {

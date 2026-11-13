@@ -139,7 +139,7 @@
 - **现象**：手机上点「添加单品」按钮**有按下变色**，但弹窗不出现；点单品图放大（Lightbox）也弹不出。**诡异点**：iPhone 12 Pro（390pt 宽）必现，12 Pro Max（428pt 宽）却正常——看起来像"宽度 bug"，但全站只有一个 640px 媒体断点，两台机器吃的是同一套移动样式。
 - **原因**：弹层（`.modal-backdrop` / `.lightbox`，都是 `position:fixed; inset:0`）当时渲染在 `.content` **内部**，而 `.content` 在移动端是 `overflow-y:auto; -webkit-overflow-scrolling:touch` 的惯性滚动容器。**iOS Safari 已知 bug：惯性滚动容器内的 `position:fixed` 子元素会被裁剪/错位**，弹层在 DOM 里存在却画到可视区外。设备差异是表象——屏矮的 12 Pro 内容撑得 `.content` 可滚动→触发；屏高的 Pro Max 内容放得下不滚→不触发。**所以"只有某台手机不行"未必是宽度断点，先怀疑滚动容器 + fixed 的组合。**
 - **教训**：① "按钮变色但无反应"先分清——变色只说明 touch 落到了元素上（`:active`），**不代表 onClick 没执行**，元素可能已渲染但不可见；别只盯着 click handler。② 全屏覆盖层（modal / lightbox / toast）**一律 portal 到 `document.body`**，别嵌在业务滚动容器里。
-- **解法**：加 `components/Portal.tsx`（`createPortal` 到 body），包裹所有弹层根节点（现在统一走 `Modal` / `Lightbox` / `ItemDetail`）。
+- **解法**：加 `components/Portal.tsx`（`createPortal` 到 body），包裹所有弹层根节点（现在统一走 `Modal` / `Lightbox` / `ItemPage`）。
 
 ### 9. Vite dev server 默认只绑 IPv6 `[::1]`
 - **现象**：`localhost`(127.0.0.1) 连不上 dev server。

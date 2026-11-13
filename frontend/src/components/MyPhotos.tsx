@@ -1,7 +1,10 @@
 import { useRef, useState } from "react";
 import { deleteMyPhoto, updateMe, uploadMyPhoto } from "../api";
 import type { Me } from "../types";
+import { MAX_PHOTOS } from "../constants";
 import { assetUrl, errMsg } from "../utils";
+import Modal from "./Modal";
+import PhotoMenu from "./PhotoMenu";
 import { useConfirm } from "./useConfirm";
 
 // 本人照片：上传 / 删除 / 设为生图底图 / AI 编辑入口
@@ -20,7 +23,11 @@ export default function MyPhotos({
 }) {
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [busy, setBusy] = useState(false);
+  const [viewing, setViewing] = useState<string | null>(null); // 灯箱里正在看的照片 key
   const fileRef = useRef<HTMLInputElement>(null);
+  // 满 9 张：不再显示添加格；AI 编辑会另存一张新照片，也先禁掉，免得花了钱存不下。
+  const full = me.photos.length >= MAX_PHOTOS;
+  const fullHint = `最多 ${MAX_PHOTOS} 张，先删除一张`;
 
   async function run(action: () => Promise<Me>, okMsg: string, failMsg: string) {
     setBusy(true);
@@ -56,42 +63,83 @@ export default function MyPhotos({
   return (
     <div className="my-profile-photos">
       {confirmDialog}
-      {me.photos.map((path) => {
+      {me.photos.map((path, index) => {
         const isBase = path === me.gen_base;
         return (
           <div key={path} className={"my-profile-photo" + (isBase ? " is-base" : "")}>
-            <img src={assetUrl(path)} alt="" loading="lazy" />
             <button
-              className="my-profile-photo-del"
-              onClick={() => onDelete(path)}
-              disabled={busy}
-              aria-label="删除"
+              type="button"
+              className="my-profile-photo-zoom"
+              aria-label={`放大查看照片 ${index + 1}`}
+              onClick={() => setViewing(path)}
             >
-              ✕
+              <img src={assetUrl(path)} alt={`我的照片 ${index + 1}`} loading="lazy" />
             </button>
-            <div className="my-profile-photo-bar">
-              {isBase ? (
-                <span className="ppbar-base">★ 生图底图</span>
-              ) : (
-                <button
-                  className="ppbar-btn"
-                  onClick={() => void run(() => updateMe({ gen_base: path }), "已设为生图默认底图", "设置失败")}
-                  disabled={busy}
-                >
-                  设为底图
-                </button>
-              )}
-              <button className="ppbar-btn" onClick={() => onEditPhoto(path)}>
-                ✦ 编辑
-              </button>
-            </div>
+            {isBase && (
+              <span className="my-profile-photo-badge" role="img" aria-label="默认试穿底图" title="默认试穿底图">
+                ★
+              </span>
+            )}
+            <PhotoMenu
+              label={`照片 ${index + 1} 的更多操作`}
+              items={[
+                ...(isBase
+                  ? []
+                  : [{
+                      label: "设为默认试穿底图",
+                      disabled: busy,
+                      onSelect: () => void run(() => updateMe({ gen_base: path }), "已设为默认试穿底图", "设置失败"),
+                    }]),
+                { label: "编辑", disabled: full, hint: fullHint, onSelect: () => onEditPhoto(path) },
+                { label: "删除", danger: true, disabled: busy, onSelect: () => void onDelete(path) },
+              ]}
+            />
           </div>
         );
       })}
-      <div className="my-profile-photo my-profile-photo-add" onClick={() => fileRef.current?.click()}>
-        <span className="my-profile-photo-plus">+</span>
-        <input ref={fileRef} type="file" accept="image/*" onChange={onPick} hidden disabled={busy} />
-      </div>
+      {!full && (
+        <div className="my-profile-photo my-profile-photo-add" onClick={() => fileRef.current?.click()}>
+          <span className="my-profile-photo-plus">+</span>
+          <input ref={fileRef} type="file" accept="image/*" onChange={onPick} hidden disabled={busy} />
+        </div>
+      )}
+      {viewing && (
+        <Modal
+          title={viewing === me.gen_base ? "★ 试穿底图" : "我的照片"}
+          className="photo-lightbox"
+          bodyClassName="photo-lightbox-body"
+          closeOnEscape
+          onClose={() => setViewing(null)}
+          footer={
+            <>
+              <button
+                className="btn-ghost"
+                type="button"
+                disabled={full}
+                title={full ? fullHint : undefined}
+                onClick={() => {
+                  setViewing(null);
+                  onEditPhoto(viewing);
+                }}
+              >
+                ✦ 编辑
+              </button>
+              {viewing !== me.gen_base && (
+                <button
+                  className="btn-primary"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void run(() => updateMe({ gen_base: viewing }), "已设为默认试穿底图", "设置失败")}
+                >
+                  设为默认试穿底图
+                </button>
+              )}
+            </>
+          }
+        >
+          <img src={assetUrl(viewing)} alt="放大的照片" />
+        </Modal>
+      )}
     </div>
   );
 }

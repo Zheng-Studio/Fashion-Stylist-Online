@@ -12,6 +12,7 @@ from app.models import Generation, Outfit, User
 from app.providers.image import ImageGen
 from app.routers.outfits import get_owned_outfit
 from app.serializers import generation_out, outfit_out, user_gen_base
+from app.services import image_jobs
 from app.services.generation import run_generation
 from app.storage import Storage
 
@@ -37,6 +38,8 @@ def create_generation(
     # 能提前判断的失败就别进队列：没照片直接告诉用户
     if not user_gen_base(user):
         raise HTTPException(400, "还没有上传本人照片，无法生成上身图。请先在「我」里上传一张全身照。")
+    if image_jobs.active_count(db, user.id) >= image_jobs.MAX_ACTIVE_PER_USER:
+        raise HTTPException(429, f"同时最多 {image_jobs.MAX_ACTIVE_PER_USER} 个生成任务，等一个完成再试")
     gen = Generation(user_id=user.id, outfit_id=outfit.id, status="pending",
                      params={"total": len(outfit.links) + len(outfit.example_item_ids or []), "done": 0,
                              "base": user_gen_base(user)})

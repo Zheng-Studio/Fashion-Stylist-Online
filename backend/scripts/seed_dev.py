@@ -19,6 +19,7 @@ sys.path.insert(0, str(BACKEND_DIR))
 from sqlalchemy import func, select  # noqa: E402
 
 from app.db import SessionLocal  # noqa: E402
+from app.domain import imaging  # noqa: E402
 from app.models import Item, User  # noqa: E402
 from app.storage import get_storage, new_key  # noqa: E402
 
@@ -56,7 +57,9 @@ def main() -> None:
             if s.get("gender") not in (args.gender, "unisex"):
                 continue
             key = new_key(user.id, "items")
-            storage.put(key, (SAMPLE_DIR / "items" / Path(s["image_path"]).name).read_bytes())
+            # 和用户上传一样按原样保存：只转码、长边缩到 1280
+            raw = (SAMPLE_DIR / "items" / Path(s["image_path"]).name).read_bytes()
+            storage.put(key, imaging.normalize_to_jpeg(raw))
             img_id = uuid.uuid4().hex
             db.add(Item(
                 user_id=user.id, name=s.get("name", ""), gender=s.get("gender", ""),

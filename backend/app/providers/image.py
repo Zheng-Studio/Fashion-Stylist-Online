@@ -16,8 +16,11 @@ from app.providers.errors import ProviderError
 class ImageGen(Protocol):
     model: str
 
-    def edit(self, images: list[bytes], prompt: str) -> bytes:
-        """输入若干张 JPEG + 指令，返回结果图字节（格式由供应商决定，上层统一转 JPEG）。"""
+    def edit(self, images: list[bytes], prompt: str, size: str | None = None) -> bytes:
+        """输入若干张 JPEG + 指令，返回结果图字节（格式由供应商决定，上层统一转 JPEG）。
+
+        size 为空时用配置里的 IMAGE_SIZE；场景需要别的尺寸（单品方图）由 services/imagegen 传进来。
+        """
         ...
 
 
@@ -26,7 +29,7 @@ class OpenAICompatImage:
         self.settings = settings
         self.model = settings.image_model
 
-    def edit(self, images: list[bytes], prompt: str) -> bytes:
+    def edit(self, images: list[bytes], prompt: str, size: str | None = None) -> bytes:
         if not images:
             raise ProviderError("生图至少需要一张输入图。")
         s = self.settings
@@ -41,8 +44,8 @@ class OpenAICompatImage:
             "n": 1,
             "sequential_image_generation": "disabled",
         }
-        if s.image_size:
-            payload["size"] = s.image_size
+        if size or s.image_size:
+            payload["size"] = size or s.image_size
         try:
             response = httpx.post(
                 s.image_base.rstrip("/") + "/images/generations",

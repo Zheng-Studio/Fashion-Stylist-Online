@@ -13,8 +13,9 @@ SYSTEM_PROMPT = (
     "你是一名专业服装搭配师。用户会给出穿衣需求，"
     "你要从给定的「候选单品清单」里挑选若干件，组成一套协调、能真正穿出门的搭配。\n\n"
     "候选里每件的 category 取值范围：内搭 / 外套 / 下装 / 整身 / 鞋 / 帽 / 配饰。\n"
-    "（内搭=贴身主上衣如T恤衬衫毛衣；外套=最外层如夹克风衣大衣；下装=裤子或半身裙；"
-    "整身=占满上下、当一套不可拆穿的一件式，如连衣裙/连体裤/比基尼套装）\n\n"
+    "（内搭=贴身主上衣如T恤衬衫毛衣；外套=最外层如夹克风衣大衣；"
+    "下装=裤子或半身裙，含需要配上衣的背带裤/背带裙；"
+    "整身=自己就能单穿成一套、不用再配上衣的一件式，如连衣裙/连体裤/比基尼套装）\n\n"
     "穿搭结构硬规则（必须全部满足，否则这套穿不出门）：\n"
     "1. 下身恰好一件：从「下装」和「整身」里二选一、且只能一件——"
     "不能同时出现下装和整身，也不能两件下装；\n"
@@ -205,16 +206,33 @@ def format_history(history: list[dict] | None, max_turns: int = 6) -> str:
     return "\n".join(lines)
 
 
+def format_profile(profile: dict | None) -> str:
+    """把用户档案压成一句「女，28 岁，身高约 170 cm」；没有就返回空串。"""
+    if not profile:
+        return ""
+    parts = []
+    if profile.get("gender") == "female":
+        parts.append("女")
+    elif profile.get("gender") == "male":
+        parts.append("男")
+    if profile.get("age"):
+        parts.append(f"{profile['age']} 岁")
+    if profile.get("height_cm"):
+        parts.append(f"身高约 {profile['height_cm']} cm")
+    return "，".join(parts)
+
+
 def build_prompt(
     user_need: str,
     items: list[dict],
     handles: list[str],
     wearer_name: str | None = None,
+    wearer_profile: dict | None = None,
     history: list[dict] | None = None,
 ) -> dict:
     """返回 {system, user}，两段都会透传给前端预览。handles 与 items 一一对应。
 
-    可注入穿搭对象（用户名），辅助 LLM 理解；
+    可注入穿搭对象（用户名）和体型参考（性别 / 年龄 / 身高，均为用户可改的估计值）；
     可注入对话历史（history），支持"把刚才的裤子换成裙子"这类连续调整。
     """
     context_parts = []
@@ -224,6 +242,9 @@ def build_prompt(
     context_parts.append(f"用户需求：{user_need}")
     if wearer_name:
         context_parts.append(f"穿搭对象：{wearer_name}")
+    profile_text = format_profile(wearer_profile)
+    if profile_text:
+        context_parts.append(f"体型参考：{profile_text}（用户可改的估计值，仅供版型/比例参考）")
     context_parts.append(
         f"候选单品清单（共 {len(items)} 件，行首是单品编号）：\n"
         f"{format_items(items, handles)}\n"
